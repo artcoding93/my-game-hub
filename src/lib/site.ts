@@ -1,12 +1,20 @@
 /**
- * 사이트 전역 설정.
- * 배포 시 `NEXT_PUBLIC_SITE_URL`을 실제 도메인으로 설정해야
- * canonical URL, Open Graph, sitemap이 올바르게 생성된다.
+ * 공식 도메인 (www 포함, 끝에 / 없음).
+ * canonical·Open Graph·JSON-LD·sitemap·robots가 모두 이 값을 쓴다.
+ * 환경 변수로 바꾸지 않는다: 프리뷰·로컬 빌드에서도 검색엔진에 알리는 주소는 항상 공식 도메인이어야 한다.
  */
+export const SITE_URL = "https://www.artcoding-game.app";
+
+/** 공식 도메인 기준 절대 URL. absoluteUrl("/") → "https://www.artcoding-game.app/" */
+export function absoluteUrl(path: `/${string}`): string {
+  return `${SITE_URL}${path}`;
+}
+
+/** 사이트 전역 설정 */
 export const siteConfig = {
   name: "My Game Hub",
   description: "설치 없이 브라우저에서 바로 즐기는 무료 2D 미니게임 모음.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: SITE_URL,
   locale: "ko_KR",
   /** Cache Components 환경에서는 렌더링 중 new Date()를 쓸 수 없으므로 고정값을 쓴다. */
   copyrightYear: 2026,
