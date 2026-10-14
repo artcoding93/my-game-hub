@@ -27,6 +27,12 @@ export interface GameMeta {
   /** SEO meta description (권장 120~160자) */
   description: string;
   keywords: string[];
+  /** 게임 페이지 "게임 소개" 본문 (문단 단위) */
+  about: string[];
+  /** 게임 페이지 "게임 규칙" 목록 */
+  rules: string[];
+  /** 게임 페이지 "공략 팁" 목록 (선택) */
+  tips?: string[];
   category: GameCategory;
   status: GameStatus;
   /** `public/` 기준 경로. 예: `/games/snake-classic/thumbnail.svg` */

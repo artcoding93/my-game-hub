@@ -1,39 +1,28 @@
 import type { ReactNode } from "react";
 import { AdSlot } from "./AdSlot";
 
-interface GamePageLayoutProps {
-  /** 게임 제목·설명 등 상단 헤더 */
-  header: ReactNode;
-  /** 게임 캔버스와 조작 UI. 이 영역 안에는 광고를 넣지 않는다. */
-  game: ReactNode;
-  /** 조작법·게임 소개 등 부가 정보 */
-  details: ReactNode;
-}
-
 /**
- * 개별 게임 페이지 공통 레이아웃.
+ * 개별 게임 페이지 공통 레이아웃. URL(params)에 의존하지 않으므로
+ * Partial Prefetching의 App Shell에 포함되어 즉시 표시된다.
  *
- * 모바일:   header → game → (간격) → 광고(rectangle) → details → 광고(banner)
- * 데스크톱: [header / game / details] | [sidebar 광고(sticky)]
+ * children은 다음 순서로 렌더링해야 한다: 제목 → 게임 플레이 영역 → 본문(소개·조작·규칙)
  *
- * 게임 조작 영역과 광고 영역 사이에는 항상 충분한 간격을 둬서 오클릭을 방지한다.
+ * 모바일:   children → 광고
+ * 데스크톱: [children / 광고] | [sidebar 광고(sticky)]
+ *
+ * 광고 배치 원칙 (AdSense 오클릭 유도 금지 정책):
+ * - 게임 화면·조작 버튼의 위·아래에 광고를 바로 붙이지 않는다.
+ *   세로 방향으로는 항상 본문이 광고와 게임 사이에 온다.
+ * - 데스크톱 사이드바 광고는 게임 열과 최소 48px(lg:gap-12) 이상 떨어뜨린다.
+ * - 터치 기기에서는 사이드바를 쓰지 않는다(lg 미만에서 숨김).
  */
-export function GamePageLayout({ header, game, details }: GamePageLayoutProps) {
+export function GamePageLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:py-10">
-      <div className="flex min-w-0 flex-col gap-6">
-        {header}
+    <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12 lg:py-10">
+      <div className="flex min-w-0 flex-col gap-10">
+        {children}
 
-        <section aria-label="게임 플레이 영역" className="w-full">
-          {game}
-        </section>
-
-        {/* 모바일 전용: 게임 영역과 분리된 본문 중간 광고 */}
-        <AdSlot placement="game-inline" variant="rectangle" className="mt-4 lg:hidden" />
-
-        {details}
-
-        <AdSlot placement="game-bottom" variant="banner" />
+        <AdSlot placement="game-bottom" variant="banner" className="mt-4" />
       </div>
 
       {/* 데스크톱 전용 사이드바 광고 */}

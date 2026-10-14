@@ -34,11 +34,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 src/
   app/
     layout.tsx               # 전역 레이아웃, 기본 메타데이터(title 템플릿, metadataBase)
-    page.tsx                 # 메인: 게임 목록
+    page.tsx                 # 메인: 사이트 소개 + 게임 목록 + 특징
     games/[slug]/page.tsx    # 개별 게임 페이지 (generateStaticParams + generateMetadata)
+    about/ contact/ privacy/ terms/   # 사이트 정보·정책 페이지 (ContentPage 사용)
     not-found.tsx
-    sitemap.ts, robots.ts    # 게임 데이터 기반 자동 생성
-  components/                # 공통 UI (AdSlot, GameCard, GamePageLayout, SiteHeader/Footer)
+    sitemap.ts, robots.ts    # 게임 데이터 + 정적 페이지 목록으로 자동 생성
+  components/                # 공통 UI (AdSlot, GameCard, GamePageLayout, ContentPage, TodoMark, SiteHeader/Footer)
   data/
     types.ts                 # GAME_SLUGS, GameMeta 등 타입
     games.ts                 # 게임 목록·메타데이터 (단일 진실 공급원)
@@ -48,22 +49,26 @@ src/
       index.ts               # default export = 게임 루트 컴포넌트
       <Name>Game.tsx         # "use client" 루트 컴포넌트
       logic.ts               # 순수 함수 게임 로직 (React/DOM 의존 금지)
+      use<Name>Game.ts       # 게임 루프·입력·저장 등 부수 효과 훅
       renderer.ts            # 캔버스 그리기
       constants.ts, types.ts
   lib/
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
-    site.ts                  # siteConfig, adsConfig (환경 변수)
+    site.ts                  # siteConfig, operatorConfig(운영자·정책 정보), navLinks/policyLinks, adsConfig
+    storage.ts               # localStorage 안전 래퍼
 public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ```
 
 ## 새 게임 추가 절차
 
 1. `src/data/types.ts`의 `GAME_SLUGS`에 slug(kebab-case) 추가
-2. `src/data/games.ts`에 메타데이터 추가 (`status: "coming-soon"`이면 목록에만 노출되고 페이지는 404)
+2. `src/data/games.ts`에 메타데이터 추가 — `about`(소개 문단), `rules`(규칙), `controls`, 선택 `tips` 포함.
+   (`status: "coming-soon"`이면 목록에만 노출되고 페이지는 404)
 3. `src/games/<slug>/` 생성 후 `index.ts`에서 루트 컴포넌트를 default export
 4. `src/games/registry.tsx`에 `dynamic(() => import("./<slug>"), { ssr: false, loading: GameLoading })` 등록
 5. `public/games/<slug>/thumbnail.*` 추가
-6. 라우트·메타데이터·sitemap은 자동 반영된다. 1번 이후 2·4번이 빠지면 타입 에러가 난다.
+6. 게임이 브라우저 저장소·쿠키·외부 서비스를 새로 쓰면 `src/app/privacy/page.tsx`를 함께 개정
+7. 라우트·메타데이터·sitemap은 자동 반영된다. 1번 이후 2·4번이 빠지면 타입 에러가 난다.
 
 ## 개발 규칙
 
@@ -74,6 +79,10 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - `generateStaticParams`는 최소 1개 이상의 값을 반환해야 한다. 빈 배열이면 빌드 에러가 난다.
 - Server Component에서 `next/dynamic`을 쓰면 코드 분할이 되지 않는다. 게임 컴포넌트 lazy loading은 `registry.tsx`(Client 모듈)에서만 한다.
 - `params`는 Promise다. `PageProps<"/games/[slug]">` 타입 헬퍼를 사용한다.
+- `partialPrefetching`이 켜져 있으므로 `params`는 페이지 최상단에서 await하지 않는다. URL과 무관한 껍데기(레이아웃·광고 자리)는
+  밖에 두고, params를 읽는 컴포넌트만 `<Suspense>` 안에 넣는다(`games/[slug]/page.tsx`의 `GameContent` 참고).
+  위반 시 `next dev`에서 "encountered URL data" 에러가 뜬다. `next dev`로 페이지를 열어 콘솔을 확인한다.
+- 렌더링 중 `new Date()`, `Math.random()`을 쓰지 않는다(Cache Components 프리렌더 에러). 연도 등은 `siteConfig`의 고정값을 쓴다.
 
 ### 게임 구현
 - 게임 루트 컴포넌트만 `"use client"`로 둔다. 페이지와 레이아웃은 Server Component로 유지한다.
@@ -84,7 +93,8 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
-- 게임 페이지 광고 위치는 `GamePageLayout`이 정한다(모바일 inline/bottom, 데스크톱 sidebar).
+- 게임 페이지 광고 위치는 `GamePageLayout`이 정한다(본문 아래 banner, 데스크톱 sidebar). 게임 화면 바로 위·아래에는 광고를 두지 않고,
+  세로 방향으로는 항상 소개·조작·규칙 본문이 게임과 광고 사이에 오게 한다. 사이드바는 게임 열과 48px 이상 떨어뜨린다.
   **게임 조작 영역(`게임 플레이 영역` section) 안이나 조작 버튼 바로 옆에 광고를 넣지 않는다.** 오클릭을 유도하는 배치는 AdSense 정책 위반이다.
 - AdSlot은 variant별 최소 높이를 확보해 CLS를 막는다. 새 위치는 기존 variant(banner/rectangle/sidebar)를 재사용한다.
 - `NEXT_PUBLIC_ADSENSE_CLIENT`가 없으면 프로덕션에서는 아무것도 렌더링하지 않고, 개발 환경에서는 자리 표시 박스를 렌더링한다.
@@ -93,6 +103,13 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 게임별 title/description/keywords/OG는 `src/data/games.ts` 값으로 `generateMetadata`에서 생성한다. 페이지에 직접 하드코딩하지 않는다.
 - `description`은 120~160자 내외의 자연스러운 한국어 문장으로 쓴다.
 - 배포 시 `NEXT_PUBLIC_SITE_URL`을 실제 도메인으로 설정한다. canonical, OG URL, sitemap이 이 값을 사용한다.
+
+### 정책 페이지 / 운영자 정보
+- 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.
+- 코드로 값을 넣을 수 없는 확인 사항(로그 보존 기간, 배포 리전 등)은 `<TodoMark label="..."/>`와 `{/* TODO: ... */}` 주석으로 표시한다. `grep -rn "TODO" src`로 전체 목록을 볼 수 있다.
+- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, 이메일 문의, localStorage(최고 점수). 쿠키·분석·광고는 없음.
+- AdSense나 분석 도구를 연결하는 변경에는 반드시 개인정보처리방침 개정(쿠키, 맞춤 광고 해제 방법, 위탁·국외 이전 표)을 포함한다. 방침 파일 상단 주석의 체크리스트를 따른다.
+- 연락처 이메일을 코드에 하드코딩하지 않는다(`operatorConfig.email` 사용).
 
 ### 코드 스타일
 - import 경로는 `@/` alias를 사용한다 (`@/components/...`, `@/lib/...`).
