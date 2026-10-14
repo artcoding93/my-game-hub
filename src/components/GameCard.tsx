@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { GameMeta } from "@/data/types";
 import { CATEGORY_LABELS, getGamePath } from "@/lib/games";
 
-export function GameCard({ game }: { game: GameMeta }) {
+/** eager: 첫 화면에 보이는 카드면 true (LCP 이미지를 지연 로딩하지 않도록) */
+export function GameCard({ game, eager = false }: { game: GameMeta; eager?: boolean }) {
   const isAvailable = game.status === "available";
 
   const content = (
@@ -13,6 +14,7 @@ export function GameCard({ game }: { game: GameMeta }) {
           src={game.thumbnail}
           alt={`${game.title} 미리보기`}
           fill
+          loading={eager ? "eager" : "lazy"}
           sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
           className="object-cover transition-transform duration-300 group-hover:scale-105"
         />

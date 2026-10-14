@@ -4,9 +4,13 @@ import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { GameSlug } from "@/data/types";
 
-function GameLoading() {
+function GameLoading({ wide = false }: { wide?: boolean }) {
   return (
-    <div className="mx-auto flex aspect-square w-full max-w-[560px] items-center justify-center rounded-xl bg-zinc-100 text-sm text-zinc-500 dark:bg-zinc-900">
+    <div
+      className={`mx-auto flex w-full items-center justify-center rounded-xl bg-zinc-100 text-sm text-zinc-500 dark:bg-zinc-900 ${
+        wide ? "aspect-[28/19]" : "aspect-square max-w-[560px]"
+      }`}
+    >
       게임을 불러오는 중…
     </div>
   );
@@ -21,7 +25,12 @@ function GameLoading() {
 const gameComponents: Record<GameSlug, ComponentType> = {
   "snake-classic": dynamic(() => import("./snake-classic"), {
     ssr: false,
-    loading: GameLoading,
+    loading: () => <GameLoading />,
+  }),
+  // Phaser는 브라우저 전용이므로 SSR을 끄고, 이 게임 페이지에서만 별도 청크로 불러온다.
+  "gold-escape": dynamic(() => import("./gold-escape"), {
+    ssr: false,
+    loading: () => <GameLoading wide />,
   }),
 };
 

@@ -1,13 +1,11 @@
 "use client";
 
-import { Press_Start_2P } from "next/font/google";
 import { useEffect, useRef } from "react";
+import { arcadeFont } from "@/lib/fonts";
 import { BOARD_PIXELS } from "./constants";
 import { drawBoard } from "./renderer";
 import type { SnakeState } from "./types";
 import { useSnakeGame } from "./useSnakeGame";
-
-const arcadeFont = Press_Start_2P({ weight: "400", subsets: ["latin"] });
 
 function formatScore(value: number) {
   return String(value).padStart(6, "0");

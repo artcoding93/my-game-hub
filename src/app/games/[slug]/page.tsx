@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
+import { GameCard } from "@/components/GameCard";
 import { GamePageLayout } from "@/components/GamePageLayout";
 import type { GameControl, GameMeta } from "@/data/types";
 import { GameLoader } from "@/games/registry";
@@ -101,12 +102,20 @@ async function GameContent({ params }: Pick<PageProps<"/games/[slug]">, "params"
     <>
       <GameJsonLd game={game} />
       <header className="flex flex-col gap-2">
-        <nav aria-label="breadcrumb" className="text-sm text-zinc-500">
-          <Link href="/" className="hover:text-foreground">
-            홈
-          </Link>{" "}
-          / <span>{CATEGORY_LABELS[game.category]}</span>
-        </nav>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <nav aria-label="breadcrumb" className="text-sm text-zinc-500">
+            <Link href="/" className="hover:text-foreground">
+              홈
+            </Link>{" "}
+            / <span>{CATEGORY_LABELS[game.category]}</span>
+          </nav>
+          <Link
+            href="/#games"
+            className="rounded-full border border-zinc-300 px-3 py-1 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-foreground dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-900"
+          >
+            ← 전체 게임
+          </Link>
+        </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{game.title}</h1>
         <p className="text-zinc-600 dark:text-zinc-400">{game.summary}</p>
       </header>
@@ -117,6 +126,7 @@ async function GameContent({ params }: Pick<PageProps<"/games/[slug]">, "params"
       </section>
 
       <GameDetails game={game} />
+      <OtherGames current={game} />
     </>
   );
 }
@@ -197,5 +207,31 @@ function ControlList({ title, controls }: { title: string; controls: GameControl
         ))}
       </dl>
     </div>
+  );
+}
+
+/** 다른 게임으로 이동할 수 있는 목록 */
+function OtherGames({ current }: { current: GameMeta }) {
+  const others = getAllGames().filter((game) => game.slug !== current.slug && game.status === "available");
+  if (others.length === 0) return null;
+
+  return (
+    <section aria-labelledby="other-games" className="flex flex-col gap-3 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+      <div className="flex items-center justify-between gap-2">
+        <h2 id="other-games" className="text-xl font-semibold">
+          다른 게임
+        </h2>
+        <Link href="/#games" className="text-sm text-emerald-700 underline underline-offset-2 dark:text-emerald-400">
+          전체 게임 보기
+        </Link>
+      </div>
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {others.map((game) => (
+          <li key={game.slug} className="flex">
+            <GameCard game={game} />
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

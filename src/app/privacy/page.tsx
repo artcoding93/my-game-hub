@@ -14,7 +14,8 @@ export const metadata: Metadata = {
  * 이 방침은 "현재 실제로 사용하는 것"만 반영한다.
  *   - 호스팅: Vercel (서버 접속 기록)
  *   - 문의: 이메일
- *   - 브라우저 localStorage: Snake Classic 최고 점수 (키: my-game-hub:snake-classic:high-score)
+ *   - 브라우저 localStorage: 게임별 최고 점수
+ *       Snake Classic (my-game-hub:snake-classic:high-score), Gold Escape (my-game-hub:gold-escape:high-score)
  *   - 쿠키·분석 도구·광고: 사용하지 않음
  *
  * TODO(AdSense 연결 시 반드시 개정):
@@ -85,6 +86,7 @@ export default function PrivacyPage() {
       </p>
       <ul>
         <li>Snake Classic: 최고 점수(숫자)</li>
+        <li>Gold Escape: 최고 점수(숫자)</li>
       </ul>
       <p>
         브라우저 설정에서 이 사이트의 데이터를 삭제하면 저장된 기록도 함께 삭제됩니다. 시크릿(비공개)

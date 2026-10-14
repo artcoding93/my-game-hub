@@ -16,6 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
+- Phaser 3.90.0 (Gold Escape 렌더링 전용, 정확한 버전 고정). 다른 게임은 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -52,10 +53,19 @@ src/
       use<Name>Game.ts       # 게임 루프·입력·저장 등 부수 효과 훅
       renderer.ts            # 캔버스 그리기
       constants.ts, types.ts
+    gold-escape/             # Phaser 기반 게임 (구조는 아래 "Gold Escape" 참고)
+      config.ts              # 속도·시간·점수·회차 배율 등 모든 밸런스 값
+      stages.ts              # 스테이지 맵 문자열 (범례는 logic/level.ts)
+      logic/                 # 순수 TS 규칙: level, terrain(이동 규칙), pathfinding(BFS), simulation
+      controller.ts          # 고정 스텝(1/60초) 진행 + HUD 구독 (Phaser 비의존)
+      input.ts               # 키보드·터치 공용 입력 상태
+      render/                # Phaser 장면, 픽셀아트(sprites.ts), createPhaserGame.ts
+      GoldEscapeGame.tsx     # React: Phaser 마운트, HUD, 오버레이, 터치 버튼
   lib/
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
     site.ts                  # siteConfig, operatorConfig(운영자·정책 정보), navLinks/policyLinks, adsConfig
     storage.ts               # localStorage 안전 래퍼
+    fonts.ts                 # 공용 픽셀 폰트(arcadeFont)
 public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ```
 
@@ -90,6 +100,16 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 캔버스는 고정 내부 해상도 × `devicePixelRatio`로 그리고, 화면 크기는 CSS(`w-full aspect-*`)로 맞춘다.
 - 모바일: 캔버스에 `touch-none`을 적용해 스와이프 중 스크롤을 막는다. 터치 버튼은 최소 44px 높이로 만든다.
 - 키보드 입력 시 방향키·Space의 기본 스크롤 동작을 `preventDefault`로 막는다.
+
+### Gold Escape (Phaser)
+- `phaser`는 `render/` 안에서만 import한다. `render/createPhaserGame`은 `GoldEscapeGame.tsx`의 `useEffect`에서
+  동적 `import()`로만 불러온다 (Phaser는 `window`를 참조하므로 서버에서 평가되면 안 된다). 레지스트리도 `ssr: false`.
+- 게임 규칙은 `logic/`에만 둔다. Phaser 장면은 `GameState`를 읽어 그리기만 하고 상태를 바꾸지 않는다.
+- 이동 가능 여부는 `logic/terrain.ts`의 `legalMoves` 하나로 판단한다. 플레이어 이동, 경비원 이동, BFS 간선이 모두 이 함수를 쓰므로
+  규칙을 바꿀 때 한 곳만 고친다. 경비원 경로 계획(`planningView`)은 구멍을 벽돌로 본다(구멍을 피하지 않고 빠지게 하기 위함).
+- 밸런스 값은 `config.ts`에서만 바꾼다. 점수 지급은 상태 전이(갇힘·소멸·획득) 시점에 한 번만 일어나도록 유지한다.
+- 스테이지를 수정하면 모든 금괴·출구 도달 가능 여부를 다시 검증한다(땅파기로 뚫고 내려가는 이동 포함).
+- 시뮬레이션은 결정적이다(난수 없음). 로직 변경 시 Node에서 `logic/simulation.ts`를 컴파일해 규칙 테스트를 돌릴 수 있다.
 
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.

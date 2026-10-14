@@ -53,9 +53,9 @@ export default function Home() {
           전체 게임 <span className="text-zinc-500">({games.length})</span>
         </h2>
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {games.map((game) => (
+          {games.map((game, index) => (
             <li key={game.slug} className="flex">
-              <GameCard game={game} />
+              <GameCard game={game} eager={index < 3} />
             </li>
           ))}
         </ul>
