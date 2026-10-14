@@ -1,0 +1,174 @@
+"use client";
+
+import { Press_Start_2P } from "next/font/google";
+import { useEffect, useRef } from "react";
+import { BOARD_PIXELS } from "./constants";
+import { drawBoard } from "./renderer";
+import type { SnakeState } from "./types";
+import { useSnakeGame } from "./useSnakeGame";
+
+const arcadeFont = Press_Start_2P({ weight: "400", subsets: ["latin"] });
+
+function formatScore(value: number) {
+  return String(value).padStart(6, "0");
+}
+
+/**
+ * Snake Classic 화면.
+ * 상태·입력은 useSnakeGame, 그리기는 renderer.ts가 담당하고
+ * 이 컴포넌트는 점수판·오버레이·버튼 UI만 그린다.
+ */
+export default function SnakeGame() {
+  const { state, start, restart, togglePause, touchHandlers } = useSnakeGame();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // 고해상도 화면에서 선명하게 보이도록 devicePixelRatio를 반영해 한 번만 크기를 맞춘다.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = BOARD_PIXELS * dpr;
+    canvas.height = BOARD_PIXELS * dpr;
+    const ctx = canvas.getContext("2d");
+    ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (ctx) ctx.imageSmoothingEnabled = false;
+  }, []);
+
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext("2d");
+    if (ctx) drawBoard(ctx, state);
+  }, [state]);
+
+  return (
+    <div
+      className={`${arcadeFont.className} mx-auto flex w-full max-w-[min(560px,max(320px,calc(100dvh_-_16rem)))] flex-col gap-3 rounded-2xl bg-black p-3 text-white shadow-[0_0_0_4px_#14532d,0_0_32px_rgba(34,197,94,0.25)] sm:p-4`}
+    >
+      <Scoreboard score={state.score} highScore={state.highScore} length={state.snake.length} />
+
+      <div className="relative" {...touchHandlers}>
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label={`Snake Classic 게임 보드. 점수 ${state.score}점`}
+          className="block aspect-square w-full touch-none select-none border-2 border-green-700 [image-rendering:pixelated]"
+        />
+        {/* CRT 주사선 효과 */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_2px,rgba(0,0,0,0.25)_3px)]"
+        />
+        <StatusOverlay state={state} />
+      </div>
+
+      <Controls status={state.status} onStart={start} onTogglePause={togglePause} onRestart={restart} />
+    </div>
+  );
+}
+
+function Scoreboard({ score, highScore, length }: { score: number; highScore: number; length: number }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 text-center text-[10px] leading-relaxed sm:text-xs" aria-live="polite">
+      <div>
+        <div className="text-red-500">1UP</div>
+        <div className="tabular-nums">{formatScore(score)}</div>
+      </div>
+      <div>
+        <div className="text-red-500">HI-SCORE</div>
+        <div className="tabular-nums text-yellow-300">{formatScore(highScore)}</div>
+      </div>
+      <div>
+        <div className="text-red-500">LENGTH</div>
+        <div className="tabular-nums">{String(length).padStart(3, "0")}</div>
+      </div>
+    </div>
+  );
+}
+
+function StatusOverlay({ state }: { state: SnakeState }) {
+  if (state.status === "playing") return null;
+
+  const content = {
+    ready: {
+      title: "SNAKE",
+      titleClass: "text-green-400",
+      lines: ["PRESS START"],
+      hint: "ENTER · SPACE · 방향키로 시작",
+    },
+    paused: {
+      title: "PAUSED",
+      titleClass: "text-yellow-300",
+      lines: [],
+      hint: "SPACE · P 로 계속하기",
+    },
+    over: {
+      title: "GAME OVER",
+      titleClass: "text-red-500",
+      lines: [`SCORE ${formatScore(state.score)}`, ...(state.isNewHighScore ? ["NEW HI-SCORE!"] : [])],
+      hint: "ENTER · SPACE 로 재시작",
+    },
+    won: {
+      title: "YOU WIN!",
+      titleClass: "text-green-400",
+      lines: [`SCORE ${formatScore(state.score)}`, ...(state.isNewHighScore ? ["NEW HI-SCORE!"] : [])],
+      hint: "ENTER · SPACE 로 재시작",
+    },
+  }[state.status];
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/70 p-4 text-center">
+      <p className={`text-xl sm:text-3xl ${content.titleClass}`}>{content.title}</p>
+      {content.lines.map((line) => (
+        <p key={line} className="animate-pulse text-xs sm:text-sm">
+          {line}
+        </p>
+      ))}
+      {/* 한글은 픽셀 폰트에 없으므로 기본 글꼴로 표시 */}
+      <p className="font-sans text-xs text-zinc-400 sm:text-sm">{content.hint}</p>
+    </div>
+  );
+}
+
+const buttonClass =
+  "h-11 min-w-28 border-2 px-4 text-[10px] uppercase tracking-wider transition-colors active:translate-y-px sm:text-xs";
+
+function Controls({
+  status,
+  onStart,
+  onTogglePause,
+  onRestart,
+}: {
+  status: SnakeState["status"];
+  onStart: () => void;
+  onTogglePause: () => void;
+  onRestart: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap justify-center gap-3">
+      {status === "ready" ? (
+        <button
+          type="button"
+          onClick={onStart}
+          className={`${buttonClass} border-green-500 bg-green-600 text-black hover:bg-green-500`}
+        >
+          Start
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onTogglePause}
+          disabled={status === "over" || status === "won"}
+          className={`${buttonClass} border-yellow-400 text-yellow-300 hover:bg-yellow-400/10 disabled:opacity-30`}
+        >
+          {status === "paused" ? "Resume" : "Pause"}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onRestart}
+        className={`${buttonClass} border-red-500 text-red-400 hover:bg-red-500/10`}
+      >
+        Restart
+      </button>
+    </div>
+  );
+}

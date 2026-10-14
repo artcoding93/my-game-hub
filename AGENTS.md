@@ -7,3 +7,94 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+# My Game Hub
+
+여러 개의 2D 브라우저 미니게임을 제공하는 웹사이트. Google AdSense 수익화를 전제로 설계한다.
+
+## 기술 스택
+
+- Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
+- Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
+- `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
+
+## 명령어
+
+| 명령 | 용도 |
+| --- | --- |
+| `npm run dev` | 개발 서버 (AdSlot 자리 표시 박스가 보임) |
+| `npm run build` | 프로덕션 빌드 + 타입 검사 |
+| `npm run lint` | ESLint |
+
+작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
+
+## 폴더 구조
+
+```
+src/
+  app/
+    layout.tsx               # 전역 레이아웃, 기본 메타데이터(title 템플릿, metadataBase)
+    page.tsx                 # 메인: 게임 목록
+    games/[slug]/page.tsx    # 개별 게임 페이지 (generateStaticParams + generateMetadata)
+    not-found.tsx
+    sitemap.ts, robots.ts    # 게임 데이터 기반 자동 생성
+  components/                # 공통 UI (AdSlot, GameCard, GamePageLayout, SiteHeader/Footer)
+  data/
+    types.ts                 # GAME_SLUGS, GameMeta 등 타입
+    games.ts                 # 게임 목록·메타데이터 (단일 진실 공급원)
+  games/
+    registry.tsx             # slug → 게임 컴포넌트 매핑 (Client 모듈, next/dynamic)
+    <slug>/                  # 게임별 로직과 컴포넌트
+      index.ts               # default export = 게임 루트 컴포넌트
+      <Name>Game.tsx         # "use client" 루트 컴포넌트
+      logic.ts               # 순수 함수 게임 로직 (React/DOM 의존 금지)
+      renderer.ts            # 캔버스 그리기
+      constants.ts, types.ts
+  lib/
+    games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
+    site.ts                  # siteConfig, adsConfig (환경 변수)
+public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
+```
+
+## 새 게임 추가 절차
+
+1. `src/data/types.ts`의 `GAME_SLUGS`에 slug(kebab-case) 추가
+2. `src/data/games.ts`에 메타데이터 추가 (`status: "coming-soon"`이면 목록에만 노출되고 페이지는 404)
+3. `src/games/<slug>/` 생성 후 `index.ts`에서 루트 컴포넌트를 default export
+4. `src/games/registry.tsx`에 `dynamic(() => import("./<slug>"), { ssr: false, loading: GameLoading })` 등록
+5. `public/games/<slug>/thumbnail.*` 추가
+6. 라우트·메타데이터·sitemap은 자동 반영된다. 1번 이후 2·4번이 빠지면 타입 에러가 난다.
+
+## 개발 규칙
+
+### 라우팅 / Next.js
+- 게임 페이지는 `src/app/games/[slug]/` 하나로 처리한다. 게임별 라우트 폴더를 따로 만들지 않는다.
+- Cache Components 환경이므로 `dynamicParams`는 사용할 수 없다. 알 수 없는 slug는 페이지에서 `notFound()`로 처리한다.
+  (스트리밍 이후 호출되므로 HTTP 200 + `noindex`로 응답된다. Next.js가 문서화한 동작이다.)
+- `generateStaticParams`는 최소 1개 이상의 값을 반환해야 한다. 빈 배열이면 빌드 에러가 난다.
+- Server Component에서 `next/dynamic`을 쓰면 코드 분할이 되지 않는다. 게임 컴포넌트 lazy loading은 `registry.tsx`(Client 모듈)에서만 한다.
+- `params`는 Promise다. `PageProps<"/games/[slug]">` 타입 헬퍼를 사용한다.
+
+### 게임 구현
+- 게임 루트 컴포넌트만 `"use client"`로 둔다. 페이지와 레이아웃은 Server Component로 유지한다.
+- 게임 상태 전이는 `logic.ts`의 순수 함수로 작성한다. 렌더링(`renderer.ts`)과 입력 처리는 분리한다.
+- 캔버스는 고정 내부 해상도 × `devicePixelRatio`로 그리고, 화면 크기는 CSS(`w-full aspect-*`)로 맞춘다.
+- 모바일: 캔버스에 `touch-none`을 적용해 스와이프 중 스크롤을 막는다. 터치 버튼은 최소 44px 높이로 만든다.
+- 키보드 입력 시 방향키·Space의 기본 스크롤 동작을 `preventDefault`로 막는다.
+
+### 광고 (AdSense)
+- 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
+- 게임 페이지 광고 위치는 `GamePageLayout`이 정한다(모바일 inline/bottom, 데스크톱 sidebar).
+  **게임 조작 영역(`게임 플레이 영역` section) 안이나 조작 버튼 바로 옆에 광고를 넣지 않는다.** 오클릭을 유도하는 배치는 AdSense 정책 위반이다.
+- AdSlot은 variant별 최소 높이를 확보해 CLS를 막는다. 새 위치는 기존 variant(banner/rectangle/sidebar)를 재사용한다.
+- `NEXT_PUBLIC_ADSENSE_CLIENT`가 없으면 프로덕션에서는 아무것도 렌더링하지 않고, 개발 환경에서는 자리 표시 박스를 렌더링한다.
+
+### SEO
+- 게임별 title/description/keywords/OG는 `src/data/games.ts` 값으로 `generateMetadata`에서 생성한다. 페이지에 직접 하드코딩하지 않는다.
+- `description`은 120~160자 내외의 자연스러운 한국어 문장으로 쓴다.
+- 배포 시 `NEXT_PUBLIC_SITE_URL`을 실제 도메인으로 설정한다. canonical, OG URL, sitemap이 이 값을 사용한다.
+
+### 코드 스타일
+- import 경로는 `@/` alias를 사용한다 (`@/components/...`, `@/lib/...`).
+- 스타일은 Tailwind 유틸리티 클래스로 작성하고, 라이트/다크 모드(`dark:`)를 함께 고려한다.
+- UI 문구는 한국어, 코드 식별자는 영어로 쓴다.

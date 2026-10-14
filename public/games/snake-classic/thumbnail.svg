@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#18181b"/>
+  <g fill="#10b981">
+    <rect x="164" y="164" width="32" height="32" rx="6"/>
+    <rect x="200" y="164" width="32" height="32" rx="6"/>
+    <rect x="236" y="164" width="32" height="32" rx="6"/>
+    <rect x="272" y="164" width="32" height="32" rx="6"/>
+    <rect x="272" y="128" width="32" height="32" rx="6"/>
+    <rect x="272" y="92" width="32" height="32" rx="6"/>
+    <rect x="308" y="92" width="32" height="32" rx="6"/>
+  </g>
+  <rect x="344" y="92" width="32" height="32" rx="6" fill="#34d399"/>
+  <circle cx="452" cy="108" r="13" fill="#f43f5e"/>
+  <text x="320" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#fafafa">SNAKE CLASSIC</text>
+</svg>
