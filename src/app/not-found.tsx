@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+// 404 페이지에는 Next.js가 noindex를 자동으로 넣으므로 robots는 따로 지정하지 않는다.
+export const metadata: Metadata = {
+  title: "페이지를 찾을 수 없습니다",
+};
 
 export default function NotFound() {
   return (

@@ -5,6 +5,12 @@
  */
 export const SITE_URL = "https://www.artcoding-game.app";
 
+/**
+ * 공개 페이지(홈·게임·정보 페이지) metadata에 넣는 색인 허용 설정 → <meta name="robots" content="index, follow">.
+ * 루트 layout에 두지 않는다: 404 페이지까지 상속되면 Next.js가 넣는 noindex와 충돌하기 때문이다.
+ */
+export const INDEXABLE = { index: true, follow: true } as const;
+
 /** 공식 도메인 기준 절대 URL. absoluteUrl("/") → "https://www.artcoding-game.app/" */
 export function absoluteUrl(path: `/${string}`): string {
   return `${SITE_URL}${path}`;

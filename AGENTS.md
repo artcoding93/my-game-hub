@@ -125,6 +125,9 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 공식 도메인은 `https://www.artcoding-game.app` (`src/lib/site.ts`의 `SITE_URL`). canonical·OG·JSON-LD·sitemap·robots가 모두 이 값을 쓴다.
   절대 URL은 `absoluteUrl(path)`로 만들고, www 없는 주소나 다른 도메인을 하드코딩하지 않는다.
 - 새 공개 페이지를 만들면 `src/app/sitemap.ts`의 `PUBLIC_PAGES`에 추가한다(게임 페이지는 `games.ts`에서 자동 반영).
+- 공개 페이지 metadata에는 `robots: INDEXABLE`(index, follow)과 `alternates.canonical`을 함께 넣는다. 루트 layout에는 robots를 두지 않는다
+  (404 페이지에 상속되면 Next.js가 자동으로 넣는 noindex와 충돌한다).
+- 없는 주소는 404 + noindex가 된다. 외부에 알려진 예전·짧은 게임 주소는 `games.ts`의 `aliases`에 등록하면 308 리디렉션된다(`next.config.ts`).
 
 ### 정책 페이지 / 운영자 정보
 - 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.

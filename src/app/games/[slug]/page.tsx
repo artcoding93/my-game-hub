@@ -7,7 +7,7 @@ import { GamePageLayout } from "@/components/GamePageLayout";
 import type { GameControl, GameMeta } from "@/data/types";
 import { GameLoader } from "@/games/registry";
 import { CATEGORY_LABELS, getAllGames, getGameBySlug, getGamePath } from "@/lib/games";
-import { siteConfig } from "@/lib/site";
+import { INDEXABLE, siteConfig } from "@/lib/site";
 
 // Cache Components 환경에서는 `dynamicParams = false`를 쓸 수 없으므로,
 // 목록에 없는 slug는 페이지에서 notFound()로 처리한다.
@@ -37,6 +37,7 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
     description: game.description,
     keywords: game.keywords,
     alternates: { canonical: path },
+    robots: INDEXABLE,
     openGraph: {
       type: "website",
       title,

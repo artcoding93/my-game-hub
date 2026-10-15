@@ -7,6 +7,7 @@ import type { GameMeta } from "./types";
 export const games: GameMeta[] = [
   {
     slug: "snake-classic",
+    aliases: ["snake"],
     title: "Snake Classic",
     summary: "먹이를 먹고 꼬리를 늘려 가는 고전 스네이크 게임",
     description:

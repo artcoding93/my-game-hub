@@ -21,6 +21,11 @@ export interface GameControl {
 
 export interface GameMeta {
   slug: GameSlug;
+  /**
+   * 예전·짧은 주소용 slug. `/games/<alias>`로 들어오면 `/games/<slug>`로 영구 리디렉션(308)한다.
+   * (없는 주소는 404 + noindex가 되어 검색엔진이 색인하지 않으므로, 외부에 알려진 주소는 여기에 등록한다.)
+   */
+  aliases?: string[];
   title: string;
   /** 카드에 표시되는 한 줄 소개 */
   summary: string;

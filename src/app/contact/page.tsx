@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPage } from "@/components/ContentPage";
 import { TodoMark } from "@/components/TodoMark";
-import { operatorConfig, siteConfig } from "@/lib/site";
+import { INDEXABLE, operatorConfig, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "문의하기",
   description: `${siteConfig.name} 이용 중 발견한 오류, 게임 제안, 제휴 및 개인정보 관련 문의 방법을 안내합니다.`,
   alternates: { canonical: "/contact" },
+  robots: INDEXABLE,
 };
 
 export default function ContactPage() {

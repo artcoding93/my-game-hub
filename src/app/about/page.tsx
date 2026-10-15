@@ -3,12 +3,13 @@ import Link from "next/link";
 import { ContentPage } from "@/components/ContentPage";
 import { TodoMark } from "@/components/TodoMark";
 import { getAllGames, getGamePath } from "@/lib/games";
-import { operatorConfig, siteConfig } from "@/lib/site";
+import { INDEXABLE, operatorConfig, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "사이트 소개",
   description: `${siteConfig.name}는 설치 없이 브라우저에서 바로 즐기는 무료 2D 미니게임 사이트입니다. 사이트의 목적과 제공 게임, 운영 원칙을 소개합니다.`,
   alternates: { canonical: "/about" },
+  robots: INDEXABLE,
 };
 
 export default function AboutPage() {
