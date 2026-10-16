@@ -45,6 +45,8 @@ export const games: GameMeta[] = [
         { input: "스와이프", action: "방향 전환" },
         { input: "보드 탭", action: "시작 · 일시정지 · 재시작" },
         { input: "하단 버튼", action: "Start / Pause / Restart" },
+        { input: "스피커 버튼", action: "효과음 켜기 / 끄기 (기본 꺼짐)" },
+        { input: "음표 버튼", action: "배경음악 켜기 / 끄기 (기본 꺼짐)" },
       ],
     },
     releasedAt: "2026-10-14",

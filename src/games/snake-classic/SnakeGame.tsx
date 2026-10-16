@@ -17,7 +17,7 @@ function formatScore(value: number) {
  * 이 컴포넌트는 점수판·오버레이·버튼 UI만 그린다.
  */
 export default function SnakeGame() {
-  const { state, start, restart, togglePause, touchHandlers } = useSnakeGame();
+  const { state, start, restart, togglePause, soundOn, toggleSound, musicOn, toggleMusic, touchHandlers } = useSnakeGame();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // 고해상도 화면에서 선명하게 보이도록 devicePixelRatio를 반영해 한 번만 크기를 맞춘다.
@@ -58,7 +58,16 @@ export default function SnakeGame() {
         <StatusOverlay state={state} />
       </div>
 
-      <Controls status={state.status} onStart={start} onTogglePause={togglePause} onRestart={restart} />
+      <Controls
+        status={state.status}
+        onStart={start}
+        onTogglePause={togglePause}
+        onRestart={restart}
+        soundOn={soundOn}
+        onToggleSound={toggleSound}
+        musicOn={musicOn}
+        onToggleMusic={toggleMusic}
+      />
     </div>
   );
 }
@@ -134,11 +143,19 @@ function Controls({
   onStart,
   onTogglePause,
   onRestart,
+  soundOn,
+  onToggleSound,
+  musicOn,
+  onToggleMusic,
 }: {
   status: SnakeState["status"];
   onStart: () => void;
   onTogglePause: () => void;
   onRestart: () => void;
+  soundOn: boolean;
+  onToggleSound: () => void;
+  musicOn: boolean;
+  onToggleMusic: () => void;
 }) {
   return (
     <div className="flex flex-wrap justify-center gap-3">
@@ -167,6 +184,61 @@ function Controls({
       >
         Restart
       </button>
+      <div className="flex gap-2">
+        <SoundToggle on={soundOn} onToggle={onToggleSound} />
+        <MusicToggle on={musicOn} onToggle={onToggleMusic} />
+      </div>
     </div>
+  );
+}
+
+function toggleClass(on: boolean) {
+  return `flex h-11 w-11 items-center justify-center border-2 transition-colors active:translate-y-px ${
+    on ? "border-green-500 text-green-400 hover:bg-green-500/10" : "border-zinc-600 text-zinc-500 hover:bg-zinc-500/10"
+  }`;
+}
+
+/** 음표 아이콘 배경음악 토글 (기본 꺼짐). 효과음과 따로 켜고 끈다. */
+function MusicToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={on}
+      aria-label={on ? "배경음악 끄기" : "배경음악 켜기"}
+      title={on ? "배경음악 끄기" : "배경음악 켜기"}
+      className={toggleClass(on)}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden fill="currentColor" shapeRendering="crispEdges">
+        {/* 픽셀 스타일 8분음표 두 개 */}
+        <path d="M8 4h12v3H11v10H8zM17 7h3v8h-3z" />
+        <path d="M4 15h7v5H4zM13 13h7v5h-7z" />
+        {!on && <path d="M2 2h3v3H2zM5 5h3v3H5zM19 19h3v3h-3zM16 16h3v3h-3z" />}
+      </svg>
+    </button>
+  );
+}
+
+/** 스피커 아이콘 효과음 토글 (기본 꺼짐). 시작 화면·플레이 중·게임 오버 모두에서 보인다. */
+function SoundToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={on}
+      aria-label={on ? "효과음 끄기" : "효과음 켜기"}
+      title={on ? "효과음 끄기" : "효과음 켜기"}
+      className={toggleClass(on)}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden fill="currentColor" shapeRendering="crispEdges">
+        {/* 픽셀 스타일 스피커 */}
+        <path d="M3 9h4l5-5h2v16h-2l-5-5H3z" />
+        {on ? (
+          <path d="M16 8h2v8h-2zM19 5h2v14h-2z" />
+        ) : (
+          <path d="M16 9h2v2h-2zM18 11h2v2h-2zM20 9h2v2h-2zM16 13h2v2h-2zM20 13h2v2h-2z" />
+        )}
+      </svg>
+    </button>
   );
 }

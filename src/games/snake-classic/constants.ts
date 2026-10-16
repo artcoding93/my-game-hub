@@ -22,6 +22,12 @@ export const MAX_QUEUED_TURNS = 2;
 
 export const HIGH_SCORE_STORAGE_KEY = "my-game-hub:snake-classic:high-score";
 
+/** 효과음 켜기(1)/끄기(0). 기본값은 꺼짐. */
+export const SOUND_STORAGE_KEY = "my-game-hub:snake-classic:sound";
+
+/** 배경음악 켜기(1)/끄기(0). 기본값은 꺼짐. */
+export const MUSIC_STORAGE_KEY = "my-game-hub:snake-classic:music";
+
 export const DIRECTION_VECTORS: Record<Direction, Point> = {
   up: { x: 0, y: -1 },
   down: { x: 0, y: 1 },

@@ -51,6 +51,8 @@ src/
       <Name>Game.tsx         # "use client" 루트 컴포넌트
       logic.ts               # 순수 함수 게임 로직 (React/DOM 의존 금지)
       use<Name>Game.ts       # 게임 루프·입력·저장 등 부수 효과 훅
+      sound.ts, soundEvents.ts  # (Snake) Web Audio 합성 효과음 엔진, 상태 변화 → 효과음 선택(순수 함수)
+      music.ts               # (Snake) BGM: 16마디 칩튠 루프, look-ahead 스케줄러. AudioContext는 sound.ts와 공유
       renderer.ts            # 캔버스 그리기
       constants.ts, types.ts
     gold-escape/             # Phaser 기반 게임 (구조는 아래 "Gold Escape" 참고)
@@ -146,7 +148,7 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ### 정책 페이지 / 운영자 정보
 - 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.
 - 코드로 값을 넣을 수 없는 확인 사항(로그 보존 기간, 배포 리전 등)은 `<TodoMark label="..."/>`와 `{/* TODO: ... */}` 주석으로 표시한다. `grep -rn "TODO" src`로 전체 목록을 볼 수 있다.
-- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, Star Vanguard 사운드 설정). 쿠키·광고·Google Analytics는 없음.
+- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, Snake·Star Vanguard 사운드 설정). 쿠키·광고·Google Analytics는 없음.
 - AdSense나 분석 도구를 연결하는 변경에는 반드시 개인정보처리방침 개정(쿠키, 맞춤 광고 해제 방법, 위탁·국외 이전 표)을 포함한다. 방침 파일 상단 주석의 체크리스트를 따른다.
 - 연락처 이메일을 코드에 하드코딩하지 않는다(`operatorConfig.email` 사용).
 

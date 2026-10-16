@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useReducer, useRef, type TouchEvent } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, type TouchEvent } from "react";
 import { readStoredNumber, writeStoredNumber } from "@/lib/storage";
-import { HIGH_SCORE_STORAGE_KEY, TICK_MS } from "./constants";
+import { HIGH_SCORE_STORAGE_KEY, MUSIC_STORAGE_KEY, SOUND_STORAGE_KEY, TICK_MS } from "./constants";
 import { createInitialState, snakeReducer } from "./logic";
+import { tempoForTick } from "./music";
+import { SnakeSound } from "./sound";
+import { getSoundEvents } from "./soundEvents";
 import type { Direction, SnakeStatus } from "./types";
 
 const KEY_TO_DIRECTION: Record<string, Direction> = {
@@ -37,9 +40,22 @@ function isTypingTarget(target: EventTarget | null) {
 export function useSnakeGame() {
   const [state, dispatch] = useReducer(snakeReducer, undefined, initState);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [sound] = useState(() => {
+    const engine = new SnakeSound(readStoredNumber(SOUND_STORAGE_KEY, 0) === 1, readStoredNumber(MUSIC_STORAGE_KEY, 0) === 1);
+    // 현재 Snake는 속도가 일정하므로 BGM도 기본 템포(115 BPM)를 유지한다. 이동 간격이 바뀌면 이 값을 갱신하면 된다.
+    engine.music.setTempo(tempoForTick(TICK_MS));
+    return engine;
+  });
+  const [soundOn, setSoundOn] = useState(sound.enabled);
+  const [musicOn, setMusicOn] = useState(sound.music.enabled);
+  const prevState = useRef(state);
+  const restarted = useRef(false);
 
   const start = useCallback(() => dispatch({ type: "start", random: Math.random() }), []);
-  const restart = useCallback(() => dispatch({ type: "restart", random: Math.random() }), []);
+  const restart = useCallback(() => {
+    restarted.current = true;
+    dispatch({ type: "restart", random: Math.random() });
+  }, []);
   const togglePause = useCallback(() => dispatch({ type: "togglePause" }), []);
   const turn = useCallback((direction: Direction) => dispatch({ type: "turn", direction }), []);
 
@@ -59,6 +75,48 @@ export function useSnakeGame() {
     const id = window.setInterval(() => dispatch({ type: "tick", random: Math.random() }), TICK_MS);
     return () => window.clearInterval(id);
   }, [state.status]);
+
+  // 효과음: 상태가 바뀔 때마다 이전 상태와 비교해 재생할 소리를 고른다(게임 규칙과 분리).
+  useEffect(() => {
+    const events = getSoundEvents(prevState.current, state, restarted.current);
+    prevState.current = state;
+    if (restarted.current) {
+      // 재시작 시 이전 판의 효과음(게임 오버 멜로디 등)이 이어지지 않게 모두 멈춘다.
+      restarted.current = false;
+      sound.stopAll();
+    }
+    sound.play(events);
+    // BGM: 시작·재시작은 처음부터, 일시정지/재개는 이어서, 게임 오버는 페이드아웃. 먹이 획득 등에는 반응하지 않는다.
+    sound.music.handleEvents(events);
+  }, [sound, state]);
+
+  // 오디오는 사용자 입력 이후에만 활성화한다(자동재생 정책). 컴포넌트가 사라지면 AudioContext를 닫는다.
+  useEffect(() => {
+    const unlock = () => sound.unlock();
+    window.addEventListener("pointerdown", unlock, true);
+    window.addEventListener("keydown", unlock, true);
+    window.addEventListener("touchend", unlock, true);
+    return () => {
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
+      window.removeEventListener("touchend", unlock, true);
+      sound.dispose();
+    };
+  }, [sound]);
+
+  const toggleSound = useCallback(() => {
+    const next = !sound.enabled;
+    sound.setEnabled(next);
+    setSoundOn(next);
+    writeStoredNumber(SOUND_STORAGE_KEY, next ? 1 : 0);
+  }, [sound]);
+
+  const toggleMusic = useCallback(() => {
+    const next = !sound.music.enabled;
+    sound.setMusicEnabled(next);
+    setMusicOn(next);
+    writeStoredNumber(MUSIC_STORAGE_KEY, next ? 1 : 0);
+  }, [sound]);
 
   // 최고 점수 저장
   useEffect(() => {
@@ -133,6 +191,10 @@ export function useSnakeGame() {
     start,
     restart,
     togglePause,
+    soundOn,
+    toggleSound,
+    musicOn,
+    toggleMusic,
     touchHandlers: { onTouchStart, onTouchEnd },
   };
 }
