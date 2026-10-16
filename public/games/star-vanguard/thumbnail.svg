@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" shape-rendering="crispEdges">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="15%" r="70%">
+      <stop offset="0" stop-color="#2e1065"/>
+      <stop offset="1" stop-color="#03030a"/>
+    </radialGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#glow)"/>
+  <!-- stars -->
+  <g fill="#94a3b8">
+    <rect x="22" y="40" width="3" height="3"/><rect x="88" y="150" width="3" height="3"/><rect x="140" y="300" width="3" height="3"/>
+    <rect x="210" y="22" width="3" height="3"/><rect x="300" y="210" width="3" height="3"/><rect x="420" y="60" width="3" height="3"/>
+    <rect x="500" y="250" width="3" height="3"/><rect x="590" y="120" width="3" height="3"/><rect x="612" y="320" width="3" height="3"/>
+    <rect x="60" y="250" width="3" height="3"/><rect x="380" y="320" width="3" height="3"/><rect x="560" y="30" width="3" height="3"/>
+  </g>
+  <g fill="#e2e8f0">
+    <rect x="160" y="110" width="3" height="6"/><rect x="470" y="180" width="3" height="6"/><rect x="260" y="280" width="3" height="6"/>
+  </g>
+
+  <!-- Command Core (octagon boss) -->
+  <g transform="translate(320 70)">
+    <polygon points="-34,-14 -14,-34 14,-34 34,-14 34,14 14,34 -14,34 -34,14" fill="#1e1033" stroke="#c084fc" stroke-width="5"/>
+    <polygon points="-48,-20 -20,-48 20,-48 48,-20 48,20 20,48 -20,48 -48,20" fill="none" stroke="#e879f9" stroke-width="3" stroke-dasharray="14 10"/>
+    <polygon points="0,-16 16,0 0,16 -16,0" fill="#fb923c"/>
+    <polygon points="0,-8 8,0 0,8 -8,0" fill="#fde047"/>
+  </g>
+
+  <!-- Armored Sentinels (hexagons) -->
+  <g fill="#2a0f05" stroke="#fb923c" stroke-width="4">
+    <polygon points="190,52 206,42 222,52 222,72 206,82 190,72"/>
+    <polygon points="418,52 434,42 450,52 450,72 434,82 418,72"/>
+  </g>
+  <g fill="#ef4444"><rect x="200" y="56" width="12" height="12"/><rect x="428" y="56" width="12" height="12"/></g>
+
+  <!-- Interceptors (chevrons pointing down) -->
+  <g fill="#d946ef">
+    <polygon points="140,110 160,130 180,110 172,110 160,122 148,110"/>
+    <polygon points="230,110 250,130 270,110 262,110 250,122 238,110"/>
+    <polygon points="370,110 390,130 410,110 402,110 390,122 378,110"/>
+    <polygon points="460,110 480,130 500,110 492,110 480,122 468,110"/>
+  </g>
+
+  <!-- Scout Drones (diamonds) -->
+  <g fill="#38bdf8">
+    <polygon points="120,150 132,162 120,174 108,162"/><polygon points="180,150 192,162 180,174 168,162"/>
+    <polygon points="240,150 252,162 240,174 228,162"/><polygon points="400,150 412,162 400,174 388,162"/>
+    <polygon points="460,150 472,162 460,174 448,162"/><polygon points="520,150 532,162 520,174 508,162"/>
+  </g>
+  <g fill="#e0f2fe">
+    <rect x="117" y="159" width="6" height="6"/><rect x="177" y="159" width="6" height="6"/><rect x="237" y="159" width="6" height="6"/>
+    <rect x="397" y="159" width="6" height="6"/><rect x="457" y="159" width="6" height="6"/><rect x="517" y="159" width="6" height="6"/>
+  </g>
+
+  <!-- diving scout with curved trail -->
+  <path d="M300 160 C 270 200, 360 220, 340 250" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="4 6" opacity="0.6"/>
+  <polygon points="340,238 352,250 340,262 328,250" fill="#38bdf8"/>
+
+  <!-- explosion -->
+  <g fill="#fde047"><rect x="300" y="128" width="6" height="6"/><rect x="318" y="118" width="4" height="4"/><rect x="286" y="116" width="4" height="4"/><rect x="326" y="136" width="4" height="4"/></g>
+  <g fill="#d946ef"><rect x="292" y="140" width="4" height="4"/><rect x="312" y="106" width="4" height="4"/></g>
+
+  <!-- enemy bullets -->
+  <g fill="#f97316"><rect x="206" y="200" width="6" height="6"/><rect x="434" y="230" width="6" height="6"/></g>
+
+  <!-- player lasers -->
+  <g fill="#67e8f9"><rect x="317" y="220" width="4" height="16"/><rect x="317" y="180" width="4" height="16"/></g>
+
+  <!-- player ship (Vanguard) -->
+  <g transform="translate(320 300)">
+    <polygon points="0,-34 8,-16 30,14 18,14 8,6 -8,6 -18,14 -30,14 -8,-16" fill="#3b82f6"/>
+    <polygon points="-30,14 -8,-16 -14,-2 -24,14" fill="#a855f7"/>
+    <polygon points="30,14 8,-16 14,-2 24,14" fill="#a855f7"/>
+    <polygon points="0,-30 4,-14 0,-4 -4,-14" fill="#67e8f9"/>
+    <rect x="-10" y="14" width="5" height="10" fill="#fb923c"/><rect x="5" y="14" width="5" height="10" fill="#fb923c"/>
+    <rect x="-9" y="22" width="3" height="6" fill="#fde047"/><rect x="6" y="22" width="3" height="6" fill="#fde047"/>
+  </g>
+
+  <!-- power-up -->
+  <rect x="520" y="230" width="26" height="26" fill="#0b1020" stroke="#4ade80" stroke-width="4"/>
+  <path d="M538 237 h-10 v5 h8 v5 h-10" fill="none" stroke="#fff" stroke-width="3"/>
+</svg>

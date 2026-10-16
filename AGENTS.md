@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
-- Phaser 3.90.0 (Gold Escape 렌더링 전용, 정확한 버전 고정). 다른 게임은 Canvas 2D를 직접 사용한다.
+- Phaser 3.90.0 (Gold Escape·Star Vanguard 렌더링 전용, 정확한 버전 고정). Snake는 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -61,6 +61,10 @@ src/
       input.ts               # 키보드·터치 공용 입력 상태
       render/                # Phaser 장면, 픽셀아트(sprites.ts), createPhaserGame.ts
       GoldEscapeGame.tsx     # React: Phaser 마운트, HUD, 오버레이, 터치 버튼
+    star-vanguard/           # Phaser 기반 우주 슈팅 (Gold Escape와 같은 구조, 아래 "Star Vanguard" 참고)
+      config.ts              # 속도·탄 상한·웨이브 난이도(difficulty)·보스·파워업 등 모든 밸런스 값
+      logic/                 # 순수 TS 규칙: rng(시드 난수), paths(베지어 경로), waves(편대 구성), simulation
+      controller.ts, input.ts, sound.ts(Web Audio 합성 효과음), render/, StarVanguardGame.tsx
   lib/
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
     site.ts                  # siteConfig, operatorConfig(운영자·정책 정보), navLinks/policyLinks, adsConfig
@@ -111,6 +115,16 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 스테이지를 수정하면 모든 금괴·출구 도달 가능 여부를 다시 검증한다(땅파기로 뚫고 내려가는 이동 포함).
 - 시뮬레이션은 결정적이다(난수 없음). 로직 변경 시 Node에서 `logic/simulation.ts`를 컴파일해 규칙 테스트를 돌릴 수 있다.
 
+### Star Vanguard (Phaser)
+- Gold Escape와 같은 규칙을 따른다: `phaser`는 `render/` 안에서만 import, `createPhaserGame`은 `useEffect`의 동적 `import()`로만 로드,
+  규칙은 `logic/`에만 두고 장면은 `GameState`를 읽어 그리기만 한다. 밸런스 값은 `config.ts`에서만 바꾼다.
+- 시뮬레이션의 난수는 `logic/rng.ts`(시드 저장: `GameState.rng`)만 쓴다. `Math.random()`은 별 배경·폭발 파편·잡음 버퍼 같은 연출에만 쓴다.
+- 적은 hp가 0이 되는 순간 `killEnemy`에서 한 번만 점수를 지급하고 목록에서 빠진다. 웨이브는 `enemies`가 비었을 때만 끝난다
+  (급강하로 화면 밖에 나간 적도 목록에 남으므로 웨이브가 멈추거나 일찍 끝나지 않는다).
+- 피할 수 없는 탄막 방지: 탄 수 상한(`difficulty().bulletCap`, 보스 `extraBulletCap`), `noFireBelowY`, `maxAimAngleDeg`, 부채꼴 간격을 유지한다.
+- 저작권: 그래픽은 `render/sprites.ts`의 자체 픽셀아트, 소리는 `sound.ts`의 실시간 합성만 쓴다. 기존 상용 게임의 이름·캐릭터·편대/진입 패턴·음원을
+  가져오지 않는다. 외부 에셋을 추가하면 상업적 이용 가능 여부와 출처·라이선스를 기록한다.
+
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
 - 게임 페이지 광고 위치는 `GamePageLayout`이 정한다(본문 아래 banner, 데스크톱 sidebar). 게임 화면 바로 위·아래에는 광고를 두지 않고,
@@ -132,7 +146,7 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ### 정책 페이지 / 운영자 정보
 - 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.
 - 코드로 값을 넣을 수 없는 확인 사항(로그 보존 기간, 배포 리전 등)은 `<TodoMark label="..."/>`와 `{/* TODO: ... */}` 주석으로 표시한다. `grep -rn "TODO" src`로 전체 목록을 볼 수 있다.
-- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수). 쿠키·광고·Google Analytics는 없음.
+- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, Star Vanguard 사운드 설정). 쿠키·광고·Google Analytics는 없음.
 - AdSense나 분석 도구를 연결하는 변경에는 반드시 개인정보처리방침 개정(쿠키, 맞춤 광고 해제 방법, 위탁·국외 이전 표)을 포함한다. 방침 파일 상단 주석의 체크리스트를 따른다.
 - 연락처 이메일을 코드에 하드코딩하지 않는다(`operatorConfig.email` 사용).
 

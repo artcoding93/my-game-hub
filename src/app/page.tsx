@@ -8,7 +8,7 @@ import { INDEXABLE, siteConfig } from "@/lib/site";
 export const metadata: Metadata = {
   title: { absolute: `${siteConfig.name} - 설치 없이 즐기는 무료 브라우저 미니게임` },
   description:
-    "Snake Classic, Gold Escape 등 설치나 회원가입 없이 PC와 모바일 브라우저에서 바로 즐기는 무료 레트로 2D 미니게임 모음입니다.",
+    "Snake Classic, Gold Escape, Star Vanguard 등 설치나 회원가입 없이 PC와 모바일 브라우저에서 바로 즐기는 무료 레트로 2D 미니게임 모음입니다.",
   alternates: { canonical: "/" },
   robots: INDEXABLE,
 };
