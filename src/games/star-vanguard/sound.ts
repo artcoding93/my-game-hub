@@ -1,4 +1,11 @@
-import type { GameEvent } from "./types";
+import { StarVanguardMusic, type MusicAction } from "./music";
+import type { GameEvent, GameState } from "./types";
+
+/** 효과음 전체 음량. BGM은 이 값의 27%로 재생한다. */
+const SFX_VOLUME = 0.22;
+export const MUSIC_RATIO = 0.27;
+/** 이 효과음이 날 때 BGM을 잠깐 낮춘다. 레이저 발사는 너무 잦아 제외한다. */
+const DUCK_ON: ReadonlySet<GameEvent["type"]> = new Set(["playerHit", "shieldBlocked", "powerUpCollected", "gameOver"]);
 
 /**
  * 레트로 효과음. 오디오 파일 없이 Web Audio API로 그때그때 합성한다(외부 음원·샘플 미사용).
@@ -9,22 +16,28 @@ export class SoundEngine {
   private master: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
   private lastShotAt = 0;
+  private suspendTimer: ReturnType<typeof setTimeout> | null = null;
+  /** 효과음 켜짐 여부 */
   enabled: boolean;
+  /** 배경음악(music.ts). 같은 AudioContext를 쓰지만 음량·켜짐은 효과음과 따로 관리한다. */
+  readonly music: StarVanguardMusic;
 
-  constructor(enabled: boolean) {
+  constructor(enabled: boolean, musicEnabled = false) {
     this.enabled = enabled;
+    this.music = new StarVanguardMusic(musicEnabled);
   }
 
-  /** 사용자 입력 핸들러 안에서 호출해야 한다. */
+  /** 사용자 입력 핸들러 안에서 호출해야 한다. 효과음·BGM이 모두 꺼져 있으면 아무것도 만들지 않는다. */
   unlock() {
-    if (!this.enabled) return;
+    if ((!this.enabled && !this.music.enabled) || typeof window === "undefined") return;
     if (!this.ctx) {
       const AudioCtor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtor) return;
       this.ctx = new AudioCtor();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.22;
+      this.master.gain.value = SFX_VOLUME;
       this.master.connect(this.ctx.destination);
+      this.music.attach(this.ctx, SFX_VOLUME * MUSIC_RATIO);
     }
     if (this.ctx.state === "suspended") void this.ctx.resume();
   }
@@ -32,10 +45,34 @@ export class SoundEngine {
   setEnabled(enabled: boolean) {
     this.enabled = enabled;
     if (enabled) this.unlock();
-    else if (this.ctx?.state === "running") void this.ctx.suspend();
+    else this.suspendIfSilent();
+  }
+
+  /** 배경음악 켜기/끄기. 끄면 BGM만 페이드아웃하고 효과음에는 영향이 없다. */
+  setMusicEnabled(enabled: boolean) {
+    this.music.setEnabled(enabled);
+    if (enabled) this.unlock();
+    else this.suspendIfSilent();
+  }
+
+  /** 게임 이벤트·조작에 맞춰 BGM을 전환한다(효과음 재생과 별개). */
+  handleMusic(events: GameEvent[], state: GameState, action?: MusicAction) {
+    this.music.handle(events, state, action);
+  }
+
+  /** 효과음·BGM이 모두 꺼졌을 때만 AudioContext를 잠재운다(BGM 페이드아웃이 끝난 뒤). */
+  private suspendIfSilent() {
+    if (this.enabled || this.music.enabled) return;
+    if (this.suspendTimer) clearTimeout(this.suspendTimer);
+    this.suspendTimer = setTimeout(() => {
+      this.suspendTimer = null;
+      if (!this.enabled && !this.music.enabled && this.ctx?.state === "running") void this.ctx.suspend();
+    }, 350);
   }
 
   dispose() {
+    if (this.suspendTimer) clearTimeout(this.suspendTimer);
+    this.music.dispose();
     void this.ctx?.close();
     this.ctx = null;
     this.master = null;
@@ -44,6 +81,9 @@ export class SoundEngine {
 
   play(events: GameEvent[]) {
     if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    if (events.some((event) => DUCK_ON.has(event.type) || (event.type === "enemyKilled" && event.kind === "core"))) {
+      this.music.duck();
+    }
     for (const event of events) {
       switch (event.type) {
         case "playerShot": {

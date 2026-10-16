@@ -18,7 +18,7 @@ function pad(value: number, length: number) {
  * - 규칙: logic/ (순수 TypeScript)
  */
 export default function StarVanguardGame() {
-  const { controller, hud, sound, soundOn, toggleSound, primaryAction } = useStarVanguard();
+  const { controller, hud, sound, soundOn, toggleSound, musicOn, toggleMusic, primaryAction } = useStarVanguard();
   const canvasParentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,7 +49,14 @@ export default function StarVanguardGame() {
         <Overlay hud={hud} onPrimary={primaryAction} />
       </div>
 
-      <ActionBar hud={hud} controller={controller} soundOn={soundOn} onToggleSound={toggleSound} />
+      <ActionBar
+        hud={hud}
+        controller={controller}
+        soundOn={soundOn}
+        onToggleSound={toggleSound}
+        musicOn={musicOn}
+        onToggleMusic={toggleMusic}
+      />
       <TouchControls controller={controller} />
     </div>
   );
@@ -272,11 +279,15 @@ function ActionBar({
   controller,
   soundOn,
   onToggleSound,
+  musicOn,
+  onToggleMusic,
 }: {
   hud: HudState;
   controller: StarVanguardController;
   soundOn: boolean;
   onToggleSound: () => void;
+  musicOn: boolean;
+  onToggleMusic: () => void;
 }) {
   const canPause = hud.phase === "playing" || hud.phase === "waveIntro" || hud.phase === "waveClear" || hud.phase === "paused";
   return (
@@ -297,10 +308,35 @@ function ActionBar({
       >
         Sound {soundOn ? "On" : "Off"}
       </button>
+      <MusicToggle on={musicOn} onToggle={onToggleMusic} />
       <p className="hidden w-full text-center font-sans text-xs text-zinc-400 pointer-fine:block">
         ←→/AD 이동 · Space 발사 · P 일시정지 · M 사운드
       </p>
     </div>
+  );
+}
+
+/** 음표 아이콘 배경음악 토글 (기본 꺼짐). 효과음(Sound) 버튼과 따로 켜고 끈다. */
+function MusicToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  const label = on ? "배경음악 끄기" : "배경음악 켜기";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={on}
+      aria-label={label}
+      title={label}
+      className={`flex h-11 w-11 items-center justify-center border-2 transition-colors active:translate-y-px ${
+        on ? "border-violet-400 text-violet-200 hover:bg-violet-400/10" : "border-zinc-600 text-zinc-500 hover:bg-zinc-500/10"
+      }`}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden fill="currentColor" shapeRendering="crispEdges">
+        {/* 픽셀 8분음표 두 개 */}
+        <path d="M8 4h12v3H11v10H8zM17 7h3v8h-3z" />
+        <path d="M4 15h7v5H4zM13 13h7v5h-7z" />
+        {!on && <path d="M2 2h3v3H2zM5 5h3v3H5zM19 19h3v3h-3zM16 16h3v3h-3z" />}
+      </svg>
+    </button>
   );
 }
 

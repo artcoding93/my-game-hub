@@ -68,8 +68,9 @@ src/
       config.ts              # 속도·탄 상한·웨이브 난이도(difficulty)·보스·파워업 등 모든 밸런스 값
       logic/                 # 순수 TS 규칙: rng(시드 난수), paths(베지어 경로), waves(편대 구성), simulation
       controller.ts, input.ts, sound.ts(Web Audio 합성 효과음), render/, StarVanguardGame.tsx
+      music.ts               # BGM 두 곡(일반 전투·보스)과 전환 관리. 공용 lib/audio/loopPlayer 사용
   lib/
-    audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). 현재 Gold Escape가 사용
+    audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
     site.ts                  # siteConfig, operatorConfig(운영자·정책 정보), navLinks/policyLinks, adsConfig
     storage.ts               # localStorage 안전 래퍼

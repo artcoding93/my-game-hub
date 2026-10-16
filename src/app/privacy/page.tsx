@@ -20,7 +20,7 @@ export const metadata: Metadata = {
  *       Star Vanguard (my-game-hub:star-vanguard:high-score)
  *   - 브라우저 localStorage: 사운드 켜기/끄기 설정 — Snake Classic (my-game-hub:snake-classic:sound, my-game-hub:snake-classic:music),
  *       Gold Escape (my-game-hub:gold-escape:sound, my-game-hub:gold-escape:music),
- *       Star Vanguard (my-game-hub:star-vanguard:sound)
+ *       Star Vanguard (my-game-hub:star-vanguard:sound, my-game-hub:star-vanguard:music)
  *   - 방문 통계: Vercel Web Analytics (쿠키 없음, src/app/layout.tsx의 <Analytics />)
  *   - 쿠키·광고: 사용하지 않음
  *
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
       <ul>
         <li>Snake Classic: 최고 점수(숫자), 효과음·배경음악 켜기/끄기 설정</li>
         <li>Gold Escape: 최고 점수(숫자), 효과음·배경음악 켜기/끄기 설정</li>
-        <li>Star Vanguard: 최고 점수(숫자), 효과음 켜기/끄기 설정</li>
+        <li>Star Vanguard: 최고 점수(숫자), 효과음·배경음악 켜기/끄기 설정</li>
       </ul>
       <p>
         브라우저 설정에서 이 사이트의 데이터를 삭제하면 저장된 기록도 함께 삭제됩니다. 시크릿(비공개)

@@ -114,6 +114,8 @@ export const GAME_CONFIG = {
 
   highScoreStorageKey: "my-game-hub:star-vanguard:high-score",
   soundStorageKey: "my-game-hub:star-vanguard:sound",
+  /** 배경음악 켜기(1)/끄기(0). 기본값은 꺼짐. */
+  musicStorageKey: "my-game-hub:star-vanguard:music",
 } as const;
 
 export interface EnemyStats {

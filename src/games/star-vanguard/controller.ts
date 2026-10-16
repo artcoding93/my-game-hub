@@ -34,6 +34,7 @@ export class StarVanguardController {
   private hud: HudState;
   private hudListeners = new Set<(hud: HudState) => void>();
   private eventListeners = new Set<(events: GameEvent[]) => void>();
+  private actionListeners = new Set<(action: "pause" | "resume") => void>();
   /** update() 밖(시작 버튼 등)에서 생긴 이벤트. 다음 프레임에 장면으로 전달한다. */
   private queued: GameEvent[] = [];
 
@@ -67,20 +68,35 @@ export class StarVanguardController {
       this.emit(events);
     } else if (phase === "paused") {
       togglePause(this.state);
+      this.emitAction("resume");
     }
     this.publishHud();
   }
 
   togglePause() {
+    const wasPaused = this.state.phase === "paused";
     togglePause(this.state);
     this.input.clear();
+    if (wasPaused !== (this.state.phase === "paused")) this.emitAction(wasPaused ? "resume" : "pause");
     this.publishHud();
   }
 
   pause() {
+    const wasPaused = this.state.phase === "paused";
     pause(this.state);
     this.input.clear();
+    if (!wasPaused && this.state.phase === "paused") this.emitAction("pause");
     this.publishHud();
+  }
+
+  /** 일시정지·재개 구독 (배경음악). 이벤트가 없는 조작이라 따로 알린다. */
+  onAction(listener: (action: "pause" | "resume") => void): () => void {
+    this.actionListeners.add(listener);
+    return () => this.actionListeners.delete(listener);
+  }
+
+  private emitAction(action: "pause" | "resume") {
+    for (const listener of this.actionListeners) listener(action);
   }
 
   getHud(): HudState {
@@ -132,3 +148,4 @@ export class StarVanguardController {
 
 export const HIGH_SCORE_KEY = GAME_CONFIG.highScoreStorageKey;
 export const SOUND_KEY = GAME_CONFIG.soundStorageKey;
+export const MUSIC_KEY = GAME_CONFIG.musicStorageKey;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { readStoredNumber, writeStoredNumber } from "@/lib/storage";
-import { HIGH_SCORE_KEY, SOUND_KEY, StarVanguardController } from "./controller";
+import { HIGH_SCORE_KEY, MUSIC_KEY, SOUND_KEY, StarVanguardController } from "./controller";
 import { KEY_TO_MOVE } from "./input";
 import { SoundEngine } from "./sound";
 
@@ -17,8 +17,9 @@ function isTypingTarget(target: EventTarget | null) {
  */
 export function useStarVanguard() {
   const [controller] = useState(() => new StarVanguardController(readStoredNumber(HIGH_SCORE_KEY)));
-  const [sound] = useState(() => new SoundEngine(readStoredNumber(SOUND_KEY, 1) !== 0));
+  const [sound] = useState(() => new SoundEngine(readStoredNumber(SOUND_KEY, 1) !== 0, readStoredNumber(MUSIC_KEY, 0) === 1));
   const [soundOn, setSoundOn] = useState(sound.enabled);
+  const [musicOn, setMusicOn] = useState(sound.music.enabled);
   const hud = useSyncExternalStore(
     (listener) => controller.subscribe(listener),
     () => controller.getHud(),
@@ -31,9 +32,14 @@ export function useStarVanguard() {
   }, [hud.highScore]);
 
   useEffect(() => {
-    const unsubscribe = controller.onEvents((events) => sound.play(events));
+    const unsubscribe = controller.onEvents((events) => {
+      sound.play(events);
+      sound.handleMusic(events, controller.state);
+    });
+    const unsubscribeAction = controller.onAction((action) => sound.handleMusic([], controller.state, action));
     return () => {
       unsubscribe();
+      unsubscribeAction();
       sound.dispose();
     };
   }, [controller, sound]);
@@ -43,6 +49,13 @@ export function useStarVanguard() {
     sound.setEnabled(next);
     setSoundOn(next);
     writeStoredNumber(SOUND_KEY, next ? 1 : 0);
+  }, [sound]);
+
+  const toggleMusic = useCallback(() => {
+    const next = !sound.music.enabled;
+    sound.setMusicEnabled(next);
+    setMusicOn(next);
+    writeStoredNumber(MUSIC_KEY, next ? 1 : 0);
   }, [sound]);
 
   /** 시작·재개 버튼. 사용자 입력 안에서 오디오를 깨운다(자동재생 정책). */
@@ -114,5 +127,5 @@ export function useStarVanguard() {
     };
   }, [controller, sound, primaryAction, toggleSound]);
 
-  return { controller, hud, sound, soundOn, toggleSound, primaryAction };
+  return { controller, hud, sound, soundOn, toggleSound, musicOn, toggleMusic, primaryAction };
 }
