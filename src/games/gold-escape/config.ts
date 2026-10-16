@@ -66,6 +66,9 @@ export const GAME_CONFIG = {
   },
 
   highScoreStorageKey: "my-game-hub:gold-escape:high-score",
+  /** 효과음·배경음악 켜기(1)/끄기(0). 기본값은 둘 다 꺼짐. 다른 게임과 겹치지 않는 게임별 키를 쓴다. */
+  sfxStorageKey: "my-game-hub:gold-escape:sound",
+  musicStorageKey: "my-game-hub:gold-escape:music",
 } as const;
 
 export function guardSpeedMultiplier(round: number): number {

@@ -99,6 +99,7 @@ export const games: GameMeta[] = [
         { input: "DIG Z / DIG X", action: "왼쪽 / 오른쪽 아래 벽돌 파기" },
         { input: "화면 탭", action: "시작 · 재개 · 다시 시작" },
         { input: "Pause 버튼", action: "일시정지" },
+        { input: "스피커 / 음표 버튼", action: "효과음 / 배경음악 켜기·끄기 (기본 꺼짐)" },
       ],
     },
     releasedAt: "2026-10-14",

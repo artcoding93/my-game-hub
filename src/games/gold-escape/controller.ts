@@ -4,6 +4,11 @@ import { createGame, pause, selfDestruct, startGame, stepGame, togglePause } fro
 import { STAGES } from "./stages";
 import type { GameEvent, GamePhase, GameState } from "./types";
 
+/** 이벤트가 없는 조작(시작·일시정지·재개). 사운드가 반응한다. */
+export type ControlAction = "start" | "pause" | "resume";
+/** 매 프레임과 조작 시점에 전달되는 정보 (사운드 등 화면 밖 구독자용) */
+export type FrameListener = (events: readonly GameEvent[], state: GameState, action?: ControlAction) => void;
+
 /** React HUD·오버레이가 쓰는 요약 정보 */
 export interface HudState {
   phase: GamePhase;
@@ -32,6 +37,7 @@ export class GoldEscapeController {
   private accumulator = 0;
   private hud: HudState;
   private hudListeners = new Set<(hud: HudState) => void>();
+  private frameListeners = new Set<FrameListener>();
 
   constructor(highScore: number) {
     this.state = createGame(highScore);
@@ -46,6 +52,7 @@ export class GoldEscapeController {
       events.push(...stepGame(this.state, this.input.take(), FIXED_DT));
       this.accumulator -= FIXED_DT;
     }
+    this.emit(events);
     this.publishHud();
     return events;
   }
@@ -53,26 +60,46 @@ export class GoldEscapeController {
   /** Enter·Space·화면 버튼: 상태에 따라 시작 / 재개 / 다시 시작 */
   primaryAction() {
     const { phase } = this.state;
-    if (phase === "ready" || phase === "gameOver") startGame(this.state);
-    else if (phase === "paused") togglePause(this.state);
+    if (phase === "ready" || phase === "gameOver") this.emit(startGame(this.state), "start");
+    else if (phase === "paused") this.togglePause();
     this.publishHud();
   }
 
   togglePause() {
+    const before = this.state.phase;
     togglePause(this.state);
     this.input.clear();
+    this.emitPauseChange(before);
     this.publishHud();
   }
 
   pause() {
+    const before = this.state.phase;
     pause(this.state);
     this.input.clear();
+    this.emitPauseChange(before);
     this.publishHud();
   }
 
   selfDestruct() {
-    selfDestruct(this.state);
+    this.emit(selfDestruct(this.state));
     this.publishHud();
+  }
+
+  /** 프레임·조작 구독 (효과음·BGM). 게임 진행에는 영향을 주지 않는다. */
+  onFrame(listener: FrameListener): () => void {
+    this.frameListeners.add(listener);
+    return () => this.frameListeners.delete(listener);
+  }
+
+  private emit(events: readonly GameEvent[], action?: ControlAction) {
+    for (const listener of this.frameListeners) listener(events, this.state, action);
+  }
+
+  private emitPauseChange(before: GamePhase) {
+    const after = this.state.phase;
+    if (before !== "paused" && after === "paused") this.emit([], "pause");
+    else if (before === "paused" && after !== "paused") this.emit([], "resume");
   }
 
   getHud(): HudState {

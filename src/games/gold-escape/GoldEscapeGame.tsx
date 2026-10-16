@@ -18,7 +18,7 @@ function pad(value: number, length: number) {
  * - 규칙: logic/ (순수 TypeScript)
  */
 export default function GoldEscapeGame() {
-  const { controller, hud } = useGoldEscape();
+  const { controller, hud, sfxOn, musicOn, toggleSfx, toggleMusic } = useGoldEscape();
   const canvasParentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +48,11 @@ export default function GoldEscapeGame() {
         <Overlay hud={hud} onPrimary={() => controller.primaryAction()} />
       </div>
 
-      <ActionBar hud={hud} controller={controller} />
+      <ActionBar
+        hud={hud}
+        controller={controller}
+        sound={{ sfxOn, musicOn, toggleSfx, toggleMusic }}
+      />
       <TouchControls controller={controller} />
     </div>
   );
@@ -161,7 +165,14 @@ function KeyGuide() {
 const actionButtonClass =
   "h-10 min-w-24 border-2 px-3 text-[9px] uppercase tracking-wider transition-colors active:translate-y-px disabled:opacity-30 sm:text-[10px]";
 
-function ActionBar({ hud, controller }: { hud: HudState; controller: GoldEscapeController }) {
+interface SoundControls {
+  sfxOn: boolean;
+  musicOn: boolean;
+  toggleSfx: () => void;
+  toggleMusic: () => void;
+}
+
+function ActionBar({ hud, controller, sound }: { hud: HudState; controller: GoldEscapeController; sound: SoundControls }) {
   const canPause = hud.phase === "playing" || hud.phase === "stageIntro" || hud.phase === "paused";
   const showStart = hud.phase === "ready" || hud.phase === "gameOver";
   return (
@@ -184,10 +195,55 @@ function ActionBar({ hud, controller }: { hud: HudState; controller: GoldEscapeC
           {hud.phase === "paused" ? "Resume" : "Pause"}
         </button>
       )}
+      <SoundToggle kind="sfx" on={sound.sfxOn} onToggle={sound.toggleSfx} />
+      <SoundToggle kind="music" on={sound.musicOn} onToggle={sound.toggleMusic} />
       <p className="hidden font-sans text-xs text-zinc-400 pointer-fine:block">
         ←→ 이동 · ↑↓ 사다리 · Z/X 파기 · P 일시정지 · R 재시작(목숨 -1)
       </p>
     </div>
+  );
+}
+
+const SOUND_LABELS = {
+  sfx: { on: "효과음 끄기", off: "효과음 켜기" },
+  music: { on: "배경음악 끄기", off: "배경음악 켜기" },
+} as const;
+
+/** 효과음(스피커)·배경음악(음표) 토글. 기본 꺼짐이며 시작 전·플레이 중·게임 오버 모두에서 보인다. */
+function SoundToggle({ kind, on, onToggle }: { kind: "sfx" | "music"; on: boolean; onToggle: () => void }) {
+  const label = SOUND_LABELS[kind][on ? "on" : "off"];
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={on}
+      aria-label={label}
+      title={label}
+      className={`flex h-11 w-11 items-center justify-center border-2 transition-colors active:translate-y-px ${
+        on ? "border-yellow-400 text-yellow-300 hover:bg-yellow-400/10" : "border-zinc-600 text-zinc-500 hover:bg-zinc-500/10"
+      }`}
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden fill="currentColor" shapeRendering="crispEdges">
+        {kind === "sfx" ? (
+          <>
+            {/* 픽셀 스피커 */}
+            <path d="M3 9h4l5-5h2v16h-2l-5-5H3z" />
+            {on ? (
+              <path d="M16 8h2v8h-2zM19 5h2v14h-2z" />
+            ) : (
+              <path d="M16 9h2v2h-2zM18 11h2v2h-2zM20 9h2v2h-2zM16 13h2v2h-2zM20 13h2v2h-2z" />
+            )}
+          </>
+        ) : (
+          <>
+            {/* 픽셀 8분음표 두 개 */}
+            <path d="M8 4h12v3H11v10H8zM17 7h3v8h-3z" />
+            <path d="M4 15h7v5H4zM13 13h7v5h-7z" />
+            {!on && <path d="M2 2h3v3H2zM5 5h3v3H5zM19 19h3v3h-3zM16 16h3v3h-3z" />}
+          </>
+        )}
+      </svg>
+    </button>
   );
 }
 
