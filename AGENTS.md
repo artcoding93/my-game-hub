@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
-- Phaser 3.90.0 (Gold Escape·Star Vanguard 렌더링 전용, 정확한 버전 고정). Snake는 Canvas 2D를 직접 사용한다.
+- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake는 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -26,6 +26,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run dev` | 개발 서버 (AdSlot 자리 표시 박스가 보임) |
 | `npm run build` | 프로덕션 빌드 + 타입 검사 |
 | `npm run lint` | ESLint |
+| `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
 
@@ -69,6 +70,13 @@ src/
       logic/                 # 순수 TS 규칙: rng(시드 난수), paths(베지어 경로), waves(편대 구성), simulation
       controller.ts, input.ts, sound.ts(Web Audio 합성 효과음), render/, StarVanguardGame.tsx
       music.ts               # BGM 두 곡(일반 전투·보스)과 전환 관리. 공용 lib/audio/loopPlayer 사용
+    lost-relic/              # Phaser 기반 방 단위 탐험 어드벤처 (아래 "Lost Relic" 참고)
+      rooms.ts               # 8개 방 지도 문자열·오브젝트(markers)·출입구. 연결도와 진행 순서는 파일 상단 주석
+      config.ts, items.ts    # 밸런스 값 / 아이템 이름·설명·아이콘 픽셀아트
+      logic/                 # 순수 TS: world(지도 해석·타일 조회), physics(이동·충돌·사다리), simulation(규칙),
+                             #   navigation·progression(지도 검증용 BFS·진행 탐색기, 테스트 전용), *.test.ts
+      save.ts                # 진행 저장 형식·검증(손상 데이터 거부)
+      controller.ts, input.ts, useLostRelic.ts, LostRelicGame.tsx, render/, audio/(cues·sfx·music 3곡·LostRelicAudio)
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
@@ -133,6 +141,19 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 저작권: 그래픽은 `render/sprites.ts`의 자체 픽셀아트, 소리는 `sound.ts`의 실시간 합성만 쓴다. 기존 상용 게임의 이름·캐릭터·편대/진입 패턴·음원을
   가져오지 않는다. 외부 에셋을 추가하면 상업적 이용 가능 여부와 출처·라이선스를 기록한다.
 
+### Lost Relic (Phaser)
+- Gold Escape·Star Vanguard와 같은 규칙을 따른다: `phaser`는 `render/` 안에서만 import, `createPhaserGame`은 `useEffect`의 동적 `import()`로만 로드,
+  규칙은 `logic/`에만 두고 장면은 `GameState`를 읽어 그리기만 한다. 밸런스 값은 `config.ts`에서만 바꾼다.
+- 방은 정확히 8개(32×18 타일, 고정 화면)이며 확장하지 않는다. 지도 범례는 `rooms.ts` 상단 주석, 해석은 `logic/world.ts`.
+  닫힌 문·덮개는 `makeTileQuery`가 solid로 돌려주므로 물리와 지도 검증이 같은 규칙을 쓴다.
+- 진행 상태(열린 상자·문, 비밀, 퍼즐, 유물)는 `GameState.flags` 문자열로만 기록하고, 점수는 플래그가 처음 세워질 때 한 번만 준다.
+  필수 아이템(`items.ts`의 `essential`)은 맞는 장소가 아니면 절대 소모하지 않는다.
+- 지도·출입구·오브젝트를 바꾸면 반드시 `npm run test:lost-relic`을 돌린다. `progression.test.ts`가 모든 방 도달, 막다른 상태 없음,
+  열쇠가 자기 문 뒤에 있지 않음을 실제 상호작용 규칙으로 검증하고, `simulation.test.ts`가 모든 출입구를 실제 물리로 왕복하고 처음부터 탈출까지 따라간다.
+- 저장: `my-game-hub:lost-relic:save`(진행), `:best-score`, `:best-time`, `:sound`, `:music`. 저장 형식을 바꾸면 `save.ts`의 `SAVE_VERSION`을 올린다.
+- 개발 서버에서만 `window.__LOST_RELIC__`(컨트롤러·오디오·teleport)이 노출된다(브라우저 테스트용, 프로덕션 빌드에서 제거).
+- 저작권: 1982년 Aztec의 탐험 장르만 참고했다. 그래픽(`render/sprites.ts`, `items.ts`)·지도·퍼즐·효과음·BGM은 모두 자체 제작이며 외부 에셋이 없다.
+
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
 - 게임 페이지 광고 위치는 `GamePageLayout`이 정한다(본문 아래 banner, 데스크톱 sidebar). 게임 화면 바로 위·아래에는 광고를 두지 않고,
@@ -154,7 +175,7 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ### 정책 페이지 / 운영자 정보
 - 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.
 - 코드로 값을 넣을 수 없는 확인 사항(로그 보존 기간, 배포 리전 등)은 `<TodoMark label="..."/>`와 `{/* TODO: ... */}` 주석으로 표시한다. `grep -rn "TODO" src`로 전체 목록을 볼 수 있다.
-- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정). 쿠키·광고·Google Analytics는 없음.
+- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정, Lost Relic 진행 저장·최단 기록). 쿠키·광고·Google Analytics는 없음.
 - AdSense나 분석 도구를 연결하는 변경에는 반드시 개인정보처리방침 개정(쿠키, 맞춤 광고 해제 방법, 위탁·국외 이전 표)을 포함한다. 방침 파일 상단 주석의 체크리스트를 따른다.
 - 연락처 이메일을 코드에 하드코딩하지 않는다(`operatorConfig.email` 사용).
 

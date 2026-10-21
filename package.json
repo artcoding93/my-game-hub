@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:lost-relic": "node --import ./scripts/ts-test-hooks.mjs --test src/games/lost-relic/logic/*.test.ts src/games/lost-relic/audio/*.test.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

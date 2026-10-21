@@ -8,6 +8,7 @@ const LOADING_SHAPES = {
   square: "aspect-square max-w-[560px]",
   wide: "aspect-[28/19]",
   tall: "aspect-[3/4] max-w-[30rem]",
+  video: "aspect-video max-w-[64rem]",
 } as const;
 
 function GameLoading({ shape = "square" }: { shape?: keyof typeof LOADING_SHAPES }) {
@@ -31,7 +32,7 @@ const gameComponents: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: () => <GameLoading />,
   }),
-  // Phaser 게임(Gold Escape, Star Vanguard)은 브라우저 전용이므로 SSR을 끄고, 해당 게임 페이지에서만 별도 청크로 불러온다.
+  // Phaser 게임(Gold Escape, Star Vanguard, Lost Relic)은 브라우저 전용이므로 SSR을 끄고, 해당 게임 페이지에서만 별도 청크로 불러온다.
   "gold-escape": dynamic(() => import("./gold-escape"), {
     ssr: false,
     loading: () => <GameLoading shape="wide" />,
@@ -39,6 +40,10 @@ const gameComponents: Record<GameSlug, ComponentType> = {
   "star-vanguard": dynamic(() => import("./star-vanguard"), {
     ssr: false,
     loading: () => <GameLoading shape="tall" />,
+  }),
+  "lost-relic": dynamic(() => import("./lost-relic"), {
+    ssr: false,
+    loading: () => <GameLoading shape="video" />,
   }),
 };
 

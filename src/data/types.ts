@@ -4,11 +4,11 @@
  * 데이터(`games.ts`)와 컴포넌트 레지스트리(`src/games/registry.tsx`)에서
  * 누락된 항목이 타입 에러로 드러난다.
  */
-export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard"] as const;
+export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard", "lost-relic"] as const;
 
 export type GameSlug = (typeof GAME_SLUGS)[number];
 
-export type GameCategory = "arcade" | "puzzle" | "action" | "casual";
+export type GameCategory = "arcade" | "puzzle" | "action" | "adventure" | "casual";
 
 export type GameStatus = "available" | "coming-soon";
 

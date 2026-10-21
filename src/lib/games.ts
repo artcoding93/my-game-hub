@@ -21,5 +21,6 @@ export const CATEGORY_LABELS: Record<GameCategory, string> = {
   arcade: "아케이드",
   puzzle: "퍼즐",
   action: "액션",
+  adventure: "어드벤처",
   casual: "캐주얼",
 };

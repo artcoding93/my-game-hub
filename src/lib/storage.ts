@@ -20,3 +20,27 @@ export function writeStoredNumber(key: string, value: number): void {
     // 저장 실패는 무시한다 (최고 점수만 유지되지 않음).
   }
 }
+
+export function readStoredString(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeStoredString(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // 저장 실패는 무시한다 (진행 상태만 유지되지 않음).
+  }
+}
+
+export function removeStored(key: string): void {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // 무시
+  }
+}

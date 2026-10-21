@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" shape-rendering="crispEdges">
+  <defs>
+    <radialGradient id="torch" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#f59e0b" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="relic" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#67e8f9" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#67e8f9" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="bricks" width="40" height="20" patternUnits="userSpaceOnUse">
+      <rect width="40" height="20" fill="#1b1324"/>
+      <rect y="9" width="40" height="2" fill="#130d1a"/>
+      <rect x="0" y="0" width="2" height="9" fill="#130d1a"/>
+      <rect x="20" y="11" width="2" height="9" fill="#130d1a"/>
+    </pattern>
+    <pattern id="stone" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="#5a4470"/>
+      <rect width="40" height="2" fill="#7d6396"/>
+      <rect y="19" width="40" height="2" fill="#30243d"/>
+      <rect x="19" width="2" height="19" fill="#30243d"/>
+      <rect y="38" width="40" height="2" fill="#30243d"/>
+    </pattern>
+  </defs>
+  <rect width="640" height="360" fill="url(#bricks)"/>
+  <!-- ceiling & floor -->
+  <rect width="640" height="40" fill="url(#stone)"/>
+  <rect y="320" width="640" height="40" fill="url(#stone)"/>
+  <!-- torches -->
+  <circle cx="90" cy="110" r="90" fill="url(#torch)"/>
+  <circle cx="550" cy="110" r="90" fill="url(#torch)"/>
+  <rect x="84" y="112" width="12" height="6" fill="#44403c"/><rect x="87" y="118" width="6" height="8" fill="#292524"/>
+  <rect x="86" y="96" width="8" height="16" fill="#ea580c"/><rect x="88" y="92" width="4" height="14" fill="#fde68a"/>
+  <rect x="544" y="112" width="12" height="6" fill="#44403c"/><rect x="547" y="118" width="6" height="8" fill="#292524"/>
+  <rect x="546" y="96" width="8" height="16" fill="#ea580c"/><rect x="548" y="92" width="4" height="14" fill="#fde68a"/>
+  <!-- dais & altar -->
+  <rect x="220" y="280" width="200" height="40" fill="url(#stone)"/>
+  <rect x="200" y="300" width="240" height="20" fill="url(#stone)"/>
+  <rect x="270" y="232" width="100" height="48" fill="#44403c"/>
+  <rect x="276" y="238" width="88" height="42" fill="#78716c"/>
+  <rect x="300" y="250" width="40" height="18" fill="#facc15"/><rect x="306" y="255" width="28" height="8" fill="#78716c"/>
+  <rect x="262" y="224" width="116" height="10" fill="#7e22ce"/><rect x="266" y="224" width="108" height="4" fill="#c084fc"/>
+  <!-- relic -->
+  <circle cx="320" cy="180" r="80" fill="url(#relic)"/>
+  <g transform="translate(290 150) scale(6)">
+    <rect x="4" y="0" width="2" height="1" fill="#a16207"/><rect x="3" y="1" width="4" height="1" fill="#facc15"/>
+    <rect x="2" y="2" width="6" height="1" fill="#facc15"/><rect x="4" y="2" width="2" height="1" fill="#22d3ee"/>
+    <rect x="1" y="3" width="8" height="1" fill="#facc15"/><rect x="3" y="3" width="4" height="1" fill="#ecfeff"/>
+    <rect x="0" y="4" width="10" height="2" fill="#facc15"/><rect x="2" y="4" width="6" height="2" fill="#22d3ee"/><rect x="4" y="4" width="2" height="2" fill="#0e7490"/>
+    <rect x="1" y="6" width="8" height="1" fill="#facc15"/><rect x="3" y="6" width="4" height="1" fill="#ecfeff"/>
+    <rect x="2" y="7" width="6" height="1" fill="#facc15"/><rect x="4" y="7" width="2" height="1" fill="#22d3ee"/>
+    <rect x="3" y="8" width="4" height="1" fill="#facc15"/><rect x="4" y="9" width="2" height="1" fill="#a16207"/>
+  </g>
+  <!-- open chest -->
+  <g transform="translate(470 284) scale(3)">
+    <rect x="1" y="0" width="10" height="3" fill="#92400e"/><rect x="0" y="3" width="12" height="1" fill="#3f1d0b"/>
+    <rect x="0" y="4" width="12" height="5" fill="#b45309"/><rect x="0" y="4" width="12" height="1" fill="#facc15"/>
+    <rect x="5" y="5" width="2" height="2" fill="#facc15"/><rect x="2" y="-3" width="2" height="2" fill="#fde68a"/><rect x="8" y="-5" width="2" height="2" fill="#fde68a"/>
+  </g>
+  <!-- explorer -->
+  <g transform="translate(120 230) scale(6)">
+    <rect x="3" y="0" width="4" height="1" fill="#a16207"/><rect x="2" y="1" width="6" height="1" fill="#a16207"/>
+    <rect x="1" y="2" width="9" height="1" fill="#713f12"/>
+    <rect x="2" y="3" width="6" height="2" fill="#fcd5a5"/><rect x="6" y="3" width="1" height="1" fill="#1c1917"/>
+    <rect x="3" y="5" width="4" height="1" fill="#d6a36f"/>
+    <rect x="2" y="6" width="2" height="2" fill="#dc2626"/><rect x="4" y="6" width="4" height="1" fill="#8b8b3a"/>
+    <rect x="1" y="7" width="8" height="2" fill="#8b8b3a"/><rect x="2" y="7" width="2" height="1" fill="#dc2626"/>
+    <rect x="1" y="9" width="1" height="1" fill="#fcd5a5"/><rect x="8" y="9" width="1" height="1" fill="#fcd5a5"/><rect x="2" y="9" width="6" height="1" fill="#8b8b3a"/>
+    <rect x="2" y="10" width="6" height="1" fill="#7c2d12"/>
+    <rect x="2" y="11" width="6" height="1" fill="#57534e"/>
+    <rect x="1" y="12" width="3" height="1" fill="#57534e"/><rect x="6" y="12" width="3" height="1" fill="#57534e"/>
+    <rect x="0" y="13" width="3" height="1" fill="#57534e"/><rect x="7" y="13" width="2" height="1" fill="#57534e"/>
+    <rect x="0" y="14" width="2" height="1" fill="#292524"/><rect x="7" y="14" width="3" height="1" fill="#292524"/>
+  </g>
+  <!-- title -->
+  <rect x="150" y="56" width="340" height="64" fill="#0c0a09" opacity="0.7"/>
+  <text x="320" y="98" text-anchor="middle" font-family="monospace" font-size="40" font-weight="bold" fill="#facc15" letter-spacing="4">LOST RELIC</text>
+  <text x="320" y="114" text-anchor="middle" font-family="monospace" font-size="12" fill="#fde68a" letter-spacing="6">TEMPLE OF SECRETS</text>
+</svg>

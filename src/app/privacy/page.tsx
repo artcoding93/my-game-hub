@@ -18,9 +18,12 @@ export const metadata: Metadata = {
  *   - 브라우저 localStorage: 게임별 최고 점수
  *       Snake Classic (my-game-hub:snake-classic:high-score), Gold Escape (my-game-hub:gold-escape:high-score),
  *       Star Vanguard (my-game-hub:star-vanguard:high-score)
+ *   - 브라우저 localStorage: Lost Relic 진행 상태·기록 (my-game-hub:lost-relic:save — 현재 방·체력·인벤토리·열린 상자/문·점수·플레이 시간,
+ *       my-game-hub:lost-relic:best-score, my-game-hub:lost-relic:best-time)
  *   - 브라우저 localStorage: 사운드 켜기/끄기 설정 — Snake Classic (my-game-hub:snake-classic:sound, my-game-hub:snake-classic:music),
  *       Gold Escape (my-game-hub:gold-escape:sound, my-game-hub:gold-escape:music),
- *       Star Vanguard (my-game-hub:star-vanguard:sound, my-game-hub:star-vanguard:music)
+ *       Star Vanguard (my-game-hub:star-vanguard:sound, my-game-hub:star-vanguard:music),
+ *       Lost Relic (my-game-hub:lost-relic:sound, my-game-hub:lost-relic:music)
  *   - 방문 통계: Vercel Web Analytics (쿠키 없음, src/app/layout.tsx의 <Analytics />)
  *   - 쿠키·광고: 사용하지 않음
  *
@@ -109,6 +112,10 @@ export default function PrivacyPage() {
         <li>Snake Classic: 최고 점수(숫자), 효과음·배경음악 켜기/끄기 설정</li>
         <li>Gold Escape: 최고 점수(숫자), 효과음·배경음악 켜기/끄기 설정</li>
         <li>Star Vanguard: 최고 점수(숫자), 효과음·배경음악 켜기/끄기 설정</li>
+        <li>
+          Lost Relic: 게임 진행 상태(현재 방, 체력, 가진 아이템, 열린 상자·문과 찾은 비밀, 점수, 플레이 시간), 최고
+          점수와 최단 클리어 시간(숫자), 효과음·배경음악 켜기/끄기 설정
+        </li>
       </ul>
       <p>
         브라우저 설정에서 이 사이트의 데이터를 삭제하면 저장된 기록도 함께 삭제됩니다. 시크릿(비공개)
