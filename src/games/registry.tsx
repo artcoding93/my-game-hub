@@ -9,6 +9,7 @@ const LOADING_SHAPES = {
   wide: "aspect-[28/19]",
   tall: "aspect-[3/4] max-w-[30rem]",
   video: "aspect-video max-w-[64rem]",
+  board: "aspect-[3/4] max-w-[40rem]",
 } as const;
 
 function GameLoading({ shape = "square" }: { shape?: keyof typeof LOADING_SHAPES }) {
@@ -44,6 +45,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
   "lost-relic": dynamic(() => import("./lost-relic"), {
     ssr: false,
     loading: () => <GameLoading shape="video" />,
+  }),
+  // Winter Blocks는 Canvas 2D만 쓰므로 Phaser 청크를 불러오지 않는다.
+  "winter-blocks": dynamic(() => import("./winter-blocks"), {
+    ssr: false,
+    loading: () => <GameLoading shape="board" />,
   }),
 };
 

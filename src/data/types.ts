@@ -4,7 +4,7 @@
  * 데이터(`games.ts`)와 컴포넌트 레지스트리(`src/games/registry.tsx`)에서
  * 누락된 항목이 타입 에러로 드러난다.
  */
-export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard", "lost-relic"] as const;
+export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard", "lost-relic", "winter-blocks"] as const;
 
 export type GameSlug = (typeof GAME_SLUGS)[number];
 
@@ -27,6 +27,11 @@ export interface GameMeta {
    */
   aliases?: string[];
   title: string;
+  /**
+   * 검색 결과 제목을 그대로 지정할 때만 쓴다(사이트 이름까지 포함한 전체 제목).
+   * 없으면 "{title} - 무료 온라인 {장르} 게임 | {사이트 이름}" 형식으로 만든다.
+   */
+  seoTitle?: string;
   /** 카드에 표시되는 한 줄 소개 */
   summary: string;
   /** SEO meta description (권장 120~160자) */

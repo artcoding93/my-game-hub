@@ -7,7 +7,7 @@ import { absoluteUrl, INDEXABLE, siteConfig, socialMetadata } from "@/lib/site";
 
 const HOME_TITLE = `${siteConfig.name} | ${siteConfig.tagline}`;
 // 게임을 추가·공개하면 이 문장의 게임 목록도 함께 고친다.
-const HOME_DESCRIPTION = `${siteConfig.name}에서 Snake Classic, Gold Escape, Star Vanguard, Lost Relic 등 다양한 레트로 아케이드 게임을 무료로 즐겨보세요. PC와 모바일에서 설치 없이 바로 플레이할 수 있습니다.`;
+const HOME_DESCRIPTION = `${siteConfig.name}에서 Snake Classic, Gold Escape, Star Vanguard, Lost Relic, Winter Blocks 등 다양한 레트로 아케이드 게임을 무료로 즐겨보세요. PC와 모바일에서 설치 없이 바로 플레이할 수 있습니다.`;
 
 export const metadata: Metadata = {
   title: { absolute: HOME_TITLE },
@@ -69,7 +69,8 @@ export default function Home() {
           {siteConfig.name}({siteConfig.alternateName})은 설치나 회원가입 없이 브라우저에서 바로 즐기는 무료 온라인 게임
           사이트입니다. 고전 스네이크를 다시 만든 Snake Classic, 금괴를 모아 탈출하는 퍼즐 플랫폼 게임 Gold
           Escape, 편대를 이룬 드론과 싸우는 우주 슈팅 Star Vanguard, 상자를 열고 비밀 통로를 찾는 탐험
-          어드벤처 Lost Relic까지 1980년대 8비트 감성의 레트로 아케이드 게임을 직접 만들어 소개합니다.
+          어드벤처 Lost Relic, 착지한 블록 위에 혹이 생기는 겨울 블록 퍼즐 Winter Blocks까지 1980년대 감성의 레트로
+          아케이드 게임을 직접 만들어 소개합니다.
         </p>
         <p className="max-w-2xl text-sm leading-6 text-zinc-500">
           모든 게임은 PC에서는 키보드로, 스마트폰과 태블릿에서는 터치로 플레이할 수 있습니다.

@@ -31,15 +31,16 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
 
   const path = getGamePath(game.slug);
   const title = `${game.title} - 무료 온라인 ${CATEGORY_LABELS[game.category]} 게임`;
+  const fullTitle = game.seoTitle ?? `${title} | ${siteConfig.name}`;
 
   return {
-    title,
+    title: game.seoTitle ? { absolute: game.seoTitle } : title,
     description: game.description,
     keywords: game.keywords,
     alternates: { canonical: path },
     robots: INDEXABLE,
     ...socialMetadata({
-      title: `${title} | ${siteConfig.name}`,
+      title: fullTitle,
       description: game.description,
       path,
       images: [{ url: game.thumbnail, alt: `${game.title} 게임 화면` }],

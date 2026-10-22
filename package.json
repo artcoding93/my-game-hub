@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:lost-relic": "node --import ./scripts/ts-test-hooks.mjs --test src/games/lost-relic/logic/*.test.ts src/games/lost-relic/audio/*.test.ts"
+    "test:lost-relic": "node --import ./scripts/ts-test-hooks.mjs --test src/games/lost-relic/logic/*.test.ts src/games/lost-relic/audio/*.test.ts",
+    "test:winter-blocks": "node --import ./scripts/ts-test-hooks.mjs --test src/games/winter-blocks/logic/*.test.ts src/games/winter-blocks/audio/*.test.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

@@ -26,6 +26,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run dev` | 개발 서버 (AdSlot 자리 표시 박스가 보임) |
 | `npm run build` | 프로덕션 빌드 + 타입 검사 |
 | `npm run lint` | ESLint |
+| `npm run test:winter-blocks` | Winter Blocks 자동화 테스트 (규칙·혹·난이도·방해 요소·BGM 재생기) |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -77,6 +78,11 @@ src/
                              #   navigation·progression(지도 검증용 BFS·진행 탐색기, 테스트 전용), *.test.ts
       save.ts                # 진행 저장 형식·검증(손상 데이터 거부)
       controller.ts, input.ts, useLostRelic.ts, LostRelicGame.tsx, render/, audio/(cues·sfx·music 3곡·LostRelicAudio)
+    winter-blocks/           # Canvas 2D 낙하형 블록 퍼즐 (Phaser 미사용, 아래 "Winter Blocks" 참고)
+      config.ts              # 6단계 레벨표·낙하 간격·점수·방해 요소 간격·저장 키
+      logic/                 # 순수 TS: pieces(7종·회전·벽 밀기 표), game(상태 전이·혹·얼음·바람·눈·점수), game.test.ts
+      controller.ts, input.ts, useWinterBlocks.ts, WinterBlocksGame.tsx, renderer.ts(캔버스·배경 눈)
+      audio/                 # instruments(오르골·첼레스타·종·썰매 방울·패드·피치카토 합성), songs(BGM 3곡), sequencer, sfx, cues, WinterAudio
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
@@ -153,6 +159,17 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 저장: `my-game-hub:lost-relic:save`(진행), `:best-score`, `:best-time`, `:sound`, `:music`. 저장 형식을 바꾸면 `save.ts`의 `SAVE_VERSION`을 올린다.
 - 개발 서버에서만 `window.__LOST_RELIC__`(컨트롤러·오디오·teleport)이 노출된다(브라우저 테스트용, 프로덕션 빌드에서 제거).
 - 저작권: 1982년 Aztec의 탐험 장르만 참고했다. 그래픽(`render/sprites.ts`, `items.ts`)·지도·퍼즐·효과음·BGM은 모두 자체 제작이며 외부 에셋이 없다.
+
+### Winter Blocks (Canvas 2D)
+- 블록 한 개의 순서는 바꾸지 않는다: 생성 → 이동·회전 → 낙하 → 착지 → 4칸 고정 → 혹 생성(+방해 효과) → 줄 검사 → 다음 블록.
+  낙하 중인 블록은 항상 4칸이며, 혹은 `logic/game.ts`의 `lockActive`에서 고정 이후에만 판에 추가한다.
+- 난수는 `GameState.rng`(시드)만 쓴다. `Math.random()`은 배경 눈·시드 생성 같은 연출에만 쓴다.
+- 얼음 줄: 완성 시 금이 가고(cracked) 남았다가, 다음 고정 뒤 줄 검사에서 여전히 완성이면 제거한다.
+- 방해 효과(얼음·바람·눈)는 한 번에 하나만: `hazards.cooldown`과 "예고 중인 바람·눈이 있으면 다른 효과 보류" 규칙을 유지한다.
+- 낙하 간격 하한은 `minGravity`(0.65초). 레벨 6 이후 난이도를 올리지 않는다.
+- BGM은 `lib/audio/loopPlayer` 대신 이 게임 전용 `audio/sequencer.ts`(악기 합성)를 쓴다. 기본값은 효과음·BGM 모두 꺼짐, 곡은 Snowy Night.
+- 개발 서버에서만 `window.__WINTER_BLOCKS__`(컨트롤러·오디오)가 노출된다.
+- 저작권: 장르 규칙만 참고했다. 다른 블록 퍼즐 게임의 이름·로고·그래픽·음악을 쓰지 않고, 게임 설명에서도 상표명을 쓰지 않는다.
 
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
