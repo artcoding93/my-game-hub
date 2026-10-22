@@ -6,15 +6,15 @@ import { GameCard } from "@/components/GameCard";
 import { GamePageLayout } from "@/components/GamePageLayout";
 import type { GameControl, GameMeta } from "@/data/types";
 import { GameLoader } from "@/games/registry";
-import { CATEGORY_LABELS, getAllGames, getGameBySlug, getGamePath } from "@/lib/games";
+import { CATEGORY_LABELS, getGameBySlug } from "@/lib/games";
+import { getGameLastModified, getGameSeo, getIndexableGames } from "@/lib/seo";
 import { absoluteUrl, INDEXABLE, siteConfig, socialMetadata } from "@/lib/site";
 
 // Cache Components 환경에서는 `dynamicParams = false`를 쓸 수 없으므로,
 // 목록에 없는 slug는 페이지에서 notFound()로 처리한다.
+// 새 게임은 src/data/games.ts에 available로 추가하면 여기와 sitemap(src/lib/seo.ts)에 함께 반영된다.
 export function generateStaticParams() {
-  return getAllGames()
-    .filter((game) => game.status === "available")
-    .map((game) => ({ slug: game.slug }));
+  return getIndexableGames().map((game) => ({ slug: game.slug }));
 }
 
 async function getGameOrNotFound(params: Promise<{ slug: string }>): Promise<GameMeta> {
@@ -27,21 +27,20 @@ async function getGameOrNotFound(params: Promise<{ slug: string }>): Promise<Gam
 export async function generateMetadata({ params }: PageProps<"/games/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const game = getGameBySlug(slug);
-  if (!game) return {};
+  // 준비 중인 게임은 페이지가 404이므로 색인용 메타데이터를 만들지 않는다.
+  if (!game || game.status !== "available") return {};
 
-  const path = getGamePath(game.slug);
-  const title = game.seoTitle ?? `${game.title} - 무료 온라인 ${CATEGORY_LABELS[game.category]} 게임`;
-  const fullTitle = `${title} | ${siteConfig.name}`;
+  const { title, fullTitle, description, path } = getGameSeo(game);
 
   return {
     title,
-    description: game.description,
+    description,
     keywords: game.keywords,
     alternates: { canonical: path },
     robots: INDEXABLE,
     ...socialMetadata({
       title: fullTitle,
-      description: game.description,
+      description,
       path,
       images: [{ url: game.thumbnail, alt: `${game.title} 게임 화면` }],
     }),
@@ -50,20 +49,21 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
 
 /** 검색엔진용 구조화 데이터 (schema.org VideoGame) */
 function GameJsonLd({ game }: { game: GameMeta }) {
-  const url = `${siteConfig.url}${getGamePath(game.slug)}`;
+  const { url } = getGameSeo(game);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "VideoGame",
     name: game.title,
     description: game.description,
     url,
-    image: `${siteConfig.url}${game.thumbnail}`,
+    image: absoluteUrl(game.thumbnail as `/${string}`),
     genre: CATEGORY_LABELS[game.category],
     gamePlatform: "Web browser",
     applicationCategory: "Game",
     operatingSystem: "Any",
     inLanguage: "ko",
     datePublished: game.releasedAt,
+    dateModified: getGameLastModified(game),
     isAccessibleForFree: true,
     offers: { "@type": "Offer", price: 0, priceCurrency: "KRW" },
     isPartOf: { "@type": "WebSite", name: siteConfig.name, alternateName: siteConfig.alternateName, url: absoluteUrl("/") },
@@ -249,7 +249,7 @@ function ControlList({ title, controls }: { title: string; controls: GameControl
 
 /** 다른 게임으로 이동할 수 있는 목록 */
 function OtherGames({ current }: { current: GameMeta }) {
-  const others = getAllGames().filter((game) => game.slug !== current.slug && game.status === "available");
+  const others = getIndexableGames().filter((game) => game.slug !== current.slug);
   if (others.length === 0) return null;
 
   return (

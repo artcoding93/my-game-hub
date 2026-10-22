@@ -27,6 +27,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run build` | 프로덕션 빌드 + 타입 검사 |
 | `npm run lint` | ESLint |
 | `npm run test:winter-blocks` | Winter Blocks 자동화 테스트 (규칙·혹·난이도·방해 요소·BGM 재생기) |
+| `npm run test:seo` | SEO 데이터 테스트 (sitemap 항목·title/description/canonical 고유성·썸네일 존재·alias 충돌) |
+| `npm run test:seo:build` | 빌드 결과물 검증 (`npm run build` 후 실행: sitemap.xml·robots.txt·프리렌더 HTML의 canonical·robots·홈 링크) |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -86,6 +88,7 @@ src/
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
+    seo.ts                   # 색인 대상 게임·게임 title/description/canonical·sitemap 항목·홈 description (seo.test.ts)
     site.ts                  # siteConfig, operatorConfig(운영자·정책 정보), navLinks/policyLinks, adsConfig
     storage.ts               # localStorage 안전 래퍼
     fonts.ts                 # 공용 픽셀 폰트(arcadeFont)
@@ -101,7 +104,8 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 4. `src/games/registry.tsx`에 `dynamic(() => import("./<slug>"), { ssr: false, loading: GameLoading })` 등록
 5. `public/games/<slug>/thumbnail.*` 추가
 6. 게임이 브라우저 저장소·쿠키·외부 서비스를 새로 쓰면 `src/app/privacy/page.tsx`를 함께 개정
-7. 라우트·메타데이터·sitemap은 자동 반영된다. 1번 이후 2·4번이 빠지면 타입 에러가 난다.
+7. 라우트·메타데이터·sitemap(홈·소개 lastmod 포함)·홈 description은 `src/lib/seo.ts`를 통해 자동 반영된다. 1번 이후 2·4번이 빠지면 타입 에러가 난다.
+8. `npm run test:seo` → `npm run build` → `npm run test:seo:build`로 확인한다. 게임 설명을 크게 고치면 `updatedAt`을 그날로 바꾼다(sitemap lastmod).
 
 ## 개발 규칙
 
@@ -189,7 +193,9 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - `description`은 120~160자 내외의 자연스러운 한국어 문장으로 쓴다.
 - 공식 도메인은 `https://www.artcoding-game.app` (`src/lib/site.ts`의 `SITE_URL`). canonical·OG·JSON-LD·sitemap·robots가 모두 이 값을 쓴다.
   절대 URL은 `absoluteUrl(path)`로 만들고, www 없는 주소나 다른 도메인을 하드코딩하지 않는다.
-- 새 공개 페이지를 만들면 `src/app/sitemap.ts`의 `PUBLIC_PAGES`에 추가한다(게임 페이지는 `games.ts`에서 자동 반영).
+- 새 공개 페이지를 만들면 `src/lib/seo.ts`의 `PUBLIC_PAGES`에 추가한다(게임 페이지는 `games.ts`에서 자동 반영).
+  sitemap에는 canonical과 같은 대표 URL만 넣는다(alias·준비 중 게임·404 제외). Google의 sitemap ping은 폐지되었으므로
+  Search Console에 sitemap을 한 번 제출해 두면 이후에는 크롤러가 lastmod를 보고 새 페이지를 찾는다.
 - 공개 페이지 metadata에는 `robots: INDEXABLE`(index, follow)과 `alternates.canonical`을 함께 넣는다. 루트 layout에는 robots를 두지 않는다
   (404 페이지에 상속되면 Next.js가 자동으로 넣는 noindex와 충돌한다).
 - 없는 주소는 404 + noindex가 된다. 외부에 알려진 예전·짧은 게임 주소는 `games.ts`의 `aliases`에 등록하면 308 리디렉션된다(`next.config.ts`).

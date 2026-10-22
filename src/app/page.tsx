@@ -3,11 +3,12 @@ import Link from "next/link";
 import { AdSlot } from "@/components/AdSlot";
 import { GameCard } from "@/components/GameCard";
 import { getAllGames } from "@/lib/games";
+import { getHomeDescription } from "@/lib/seo";
 import { absoluteUrl, INDEXABLE, siteConfig, socialMetadata } from "@/lib/site";
 
 const HOME_TITLE = `${siteConfig.name} | ${siteConfig.tagline}`;
-// 게임을 추가·공개하면 이 문장의 게임 목록도 함께 고친다.
-const HOME_DESCRIPTION = `${siteConfig.name}에서 Snake Classic, Gold Escape, Star Vanguard, Lost Relic, Winter Blocks 등 다양한 레트로 아케이드 게임을 무료로 즐겨보세요. PC와 모바일에서 설치 없이 바로 플레이할 수 있습니다.`;
+// 공개된 게임 목록에서 자동으로 만든다(src/lib/seo.ts). 게임을 추가해도 고칠 필요 없다.
+const HOME_DESCRIPTION = getHomeDescription();
 
 export const metadata: Metadata = {
   title: { absolute: HOME_TITLE },
@@ -65,6 +66,7 @@ export default function Home() {
             {siteConfig.tagline}
           </span>
         </h1>
+        {/* 고정 소개 문구. 게임을 추가해도 갱신하지 않는다(운영자 결정). 게임 목록은 아래 카드와 meta description에 자동 반영된다. */}
         <p className="max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-400">
           {siteConfig.name}({siteConfig.alternateName})은 설치나 회원가입 없이 브라우저에서 바로 즐기는 무료 온라인 게임
           사이트입니다. 고전 스네이크를 다시 만든 Snake Classic, 금괴를 모아 탈출하는 퍼즐 플랫폼 게임 Gold

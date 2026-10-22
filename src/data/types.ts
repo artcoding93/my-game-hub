@@ -67,4 +67,9 @@ export interface GameMeta {
   };
   /** ISO 날짜 (YYYY-MM-DD) */
   releasedAt: string;
+  /**
+   * 게임이나 페이지 설명을 크게 고친 날 (YYYY-MM-DD, 선택). sitemap lastmod로 알려 검색엔진이 다시 크롤링하게 한다.
+   * 없으면 releasedAt을 쓴다. 실제로 내용이 바뀐 날만 적는다(매번 바꾸면 검색엔진이 lastmod를 신뢰하지 않는다).
+   */
+  updatedAt?: string;
 }

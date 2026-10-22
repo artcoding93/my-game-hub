@@ -34,10 +34,6 @@ export default function ContactPage() {
       <p className="text-sm text-zinc-500">
         사이트에는 별도의 문의 입력 양식이 없으며, 이메일로 보내 주신 내용만 확인합니다.
       </p>
-      <p>
-        {/* TODO: 답변 소요 기간 확정 */}
-        답변은 보통 <TodoMark label="답변 소요 기간 (예: 영업일 기준 3일 이내)" />에 드립니다.
-      </p>
 
       <h2>이런 내용을 보내 주세요</h2>
       <ul>
