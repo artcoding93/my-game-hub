@@ -55,8 +55,8 @@ export function absoluteUrl(path: `/${string}`): string {
 
 /** 사이트 전역 설정. 브랜드 표기는 name(공식)·alternateName(보조)만 쓴다. */
 export const siteConfig = {
-  name: "ArtCoding Game",
-  alternateName: "ArtCoding",
+  name: "artcoding game",
+  alternateName: "artcoding",
   /** 메인 페이지 제목에 붙는 한 줄 소개 */
   tagline: "무료 온라인 레트로 아케이드 게임",
   description: "설치 없이 PC와 모바일 브라우저에서 바로 즐기는 무료 레트로 아케이드 게임 모음.",

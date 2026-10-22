@@ -8,9 +8,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# ArtCoding Game
+# artcoding game
 
-여러 개의 2D 브라우저 미니게임을 제공하는 웹사이트(공식 이름 "ArtCoding Game", 보조 표기 "ArtCoding"). Google AdSense 수익화를 전제로 설계한다.
+여러 개의 2D 브라우저 미니게임을 제공하는 웹사이트(공식 이름 "artcoding game", 보조 표기 "artcoding"). Google AdSense 수익화를 전제로 설계한다.
 
 ## 기술 스택
 
@@ -180,8 +180,8 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - `NEXT_PUBLIC_ADSENSE_CLIENT`가 없으면 프로덕션에서는 아무것도 렌더링하지 않고, 개발 환경에서는 자리 표시 박스를 렌더링한다.
 
 ### SEO
-- 브랜드 표기는 `siteConfig.name`("ArtCoding Game")·`siteConfig.alternateName`("ArtCoding")만 쓴다. 문자열로 하드코딩하지 않는다.
-  한국어 조사는 받침 기준("ArtCoding Game은/이")으로 쓴다.
+- 브랜드 표기는 `siteConfig.name`("artcoding game")·`siteConfig.alternateName`("artcoding")만 쓴다. 문자열로 하드코딩하지 않는다.
+  한국어 조사는 받침 기준("artcoding game은/이")으로 쓴다.
 - 홈에는 schema.org `WebSite` JSON-LD가 하나만 있다(`src/app/page.tsx`). 게임 페이지의 `VideoGame` JSON-LD는 `isPartOf`로 이를 가리킨다.
 - 페이지 OG·Twitter는 `socialMetadata()`(`src/lib/site.ts`)로 만든다. 페이지의 openGraph는 layout 것을 통째로 덮어쓰므로 직접 쓰지 않는다.
 - 게임별 title/description/keywords/OG는 `src/data/games.ts` 값으로 `generateMetadata`에서 생성한다. 페이지에 직접 하드코딩하지 않는다.

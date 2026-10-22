@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   ...socialMetadata({ title: HOME_TITLE, description: HOME_DESCRIPTION, path: "/" }),
 };
 
-/** 검색엔진이 사이트 이름(ArtCoding Game / ArtCoding)을 알 수 있도록 하는 schema.org WebSite 구조화 데이터. 홈에만 둔다. */
+/** 검색엔진이 사이트 이름(artcoding game / artcoding)을 알 수 있도록 하는 schema.org WebSite 구조화 데이터. 홈에만 둔다. */
 function WebSiteJsonLd() {
   const jsonLd = {
     "@context": "https://schema.org",
