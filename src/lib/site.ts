@@ -79,15 +79,15 @@ export const operatorConfig: {
   termsEffectiveDate: string | null;
 } = {
   // TODO: 운영자 이름(개인) 또는 상호명
-  name: null,
+  name: "artcoding",
   // TODO: 공개해도 되는 문의용 이메일 주소
-  email: null,
+  email: "artcoding93@gmail.com",
   // TODO: 개인정보 보호책임자 성명(개인 운영이면 운영자 본인)
-  privacyOfficer: null,
+  privacyOfficer: "김도헌",
   // TODO: 개인정보처리방침 시행일 (YYYY-MM-DD)
-  privacyEffectiveDate: null,
+  privacyEffectiveDate: "2026-10-25",
   // TODO: 이용약관 시행일 (YYYY-MM-DD)
-  termsEffectiveDate: null,
+  termsEffectiveDate: "2026-10-25",
 };
 
 export const navLinks = [
