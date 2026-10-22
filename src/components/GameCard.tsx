@@ -35,7 +35,7 @@ export function GameCard({ game, eager = false }: { game: GameMeta; eager?: bool
   );
 
   const cardClass =
-    "group flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950";
+    "group flex w-full flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950";
 
   if (!isAvailable) {
     return (
