@@ -5,10 +5,13 @@ import { GAME_CONFIG } from "./config";
 import { GoldEscapeController, HIGH_SCORE_KEY } from "./controller";
 import { KEY_TO_DIRECTION } from "./input";
 
-function isTypingTarget(target: EventTarget | null) {
+/** 입력 칸이나 링크에 포커스가 있으면 게임 키를 가로채지 않는다(Enter로 헤더·푸터 링크를 열 수 있게). */
+function isPageControlTarget(target: EventTarget | null) {
   return (
     target instanceof HTMLElement &&
-    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+    (target.isContentEditable ||
+      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
+      target.closest("a[href]") !== null)
   );
 }
 
@@ -72,7 +75,7 @@ export function useGoldEscape() {
     const { input } = controller;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event.target)) return;
+      if (event.ctrlKey || event.metaKey || event.altKey || isPageControlTarget(event.target)) return;
 
       const direction = KEY_TO_DIRECTION[event.code];
       if (direction) {

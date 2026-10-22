@@ -374,7 +374,7 @@ function TouchControls({ controller }: { controller: StarVanguardController }) {
     "flex h-16 w-20 items-center justify-center rounded-xl border-2 border-cyan-700 bg-zinc-900 text-2xl text-cyan-200 active:bg-cyan-900 select-none touch-none";
 
   return (
-    <div className="hidden items-center justify-between gap-3 pt-1 pointer-coarse:flex" aria-label="터치 조작">
+    <div className="hidden items-center justify-between gap-2 pt-1 pointer-coarse:flex min-[380px]:gap-3" aria-label="터치 조작">
       <div className="flex gap-2">
         <button type="button" aria-label="왼쪽으로 이동" className={padClass} {...move("touch-left", -1)}>
           ◀
@@ -386,7 +386,7 @@ function TouchControls({ controller }: { controller: StarVanguardController }) {
       <button
         type="button"
         aria-label="발사"
-        className="flex h-16 w-24 items-center justify-center rounded-full border-2 border-orange-500 bg-orange-950 text-xs text-orange-200 active:bg-orange-800 select-none touch-none"
+        className="flex h-16 w-24 max-[379px]:w-20 items-center justify-center rounded-full border-2 border-orange-500 bg-orange-950 text-xs text-orange-200 active:bg-orange-800 select-none touch-none"
         {...fire}
       >
         FIRE

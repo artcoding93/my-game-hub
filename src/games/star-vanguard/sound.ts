@@ -39,7 +39,9 @@ export class SoundEngine {
       this.master.connect(this.ctx.destination);
       this.music.attach(this.ctx, SFX_VOLUME * MUSIC_RATIO);
     }
-    if (this.ctx.state === "suspended") void this.ctx.resume();
+    // iOS Safari는 전화·백그라운드 전환 뒤 "interrupted" 상태로 남을 수 있으므로 suspended 외에도 다시 깨운다.
+    const state = this.ctx.state as string;
+    if (state !== "running" && state !== "closed") void this.ctx.resume();
   }
 
   setEnabled(enabled: boolean) {

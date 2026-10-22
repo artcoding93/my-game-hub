@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <!-- ArtCoding Game 사이트 아이콘: 자체 제작 픽셀아트 게임패드 -->
+  <rect width="32" height="32" rx="7" fill="#0b1220"/>
+  <path fill="#10b981" d="M7 10h18v2h2v10h-2v2h-5v-2h-2v-2h-4v2h-2v2H7v-2H5V12h2z"/>
+  <path fill="#0b1220" d="M9 14h2v-2h2v2h2v2h-2v2h-2v-2H9z"/>
+  <rect x="21" y="13" width="2" height="2" fill="#fcd34d"/>
+  <rect x="23" y="16" width="2" height="2" fill="#f87171"/>
+  <rect x="19" y="16" width="2" height="2" fill="#0b1220"/>
+</svg>

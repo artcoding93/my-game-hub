@@ -4,7 +4,7 @@ import { ContentPage } from "@/components/ContentPage";
 import { TodoMark } from "@/components/TodoMark";
 import { INDEXABLE, operatorConfig, siteConfig, socialMetadata } from "@/lib/site";
 
-const DESCRIPTION = `${siteConfig.name} 이용 중 발견한 오류, 게임 제안, 제휴 및 개인정보 관련 문의 방법을 안내합니다.`;
+const DESCRIPTION = `${siteConfig.name} 이용 중 발견한 게임 오류 제보, 새 게임 제안, 저작권 신고, 제휴 및 개인정보 관련 문의를 이메일로 보내는 방법을 안내합니다.`;
 
 export const metadata: Metadata = {
   title: "문의하기",
@@ -27,8 +27,12 @@ export default function ContactPage() {
       <p className="text-lg">
         <TodoMark
           label="문의용 이메일 주소"
+          message="운영자 이메일 입력 필요"
           value={email && <a href={`mailto:${email}`}>{email}</a>}
         />
+      </p>
+      <p className="text-sm text-zinc-500">
+        사이트에는 별도의 문의 입력 양식이 없으며, 이메일로 보내 주신 내용만 확인합니다.
       </p>
       <p>
         {/* TODO: 답변 소요 기간 확정 */}
@@ -39,6 +43,7 @@ export default function ContactPage() {
       <ul>
         <li>게임 오류 제보: 게임 이름, 사용 기기와 브라우저, 문제가 생긴 상황</li>
         <li>새 게임 제안이나 개선 의견</li>
+        <li>저작권 등 권리 침해 신고</li>
         <li>제휴 및 광고 문의</li>
         <li>개인정보 관련 문의 (열람·삭제 요청 등)</li>
       </ul>

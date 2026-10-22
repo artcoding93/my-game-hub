@@ -96,11 +96,14 @@ export const navLinks = [
   { href: "/contact", label: "문의" },
 ] as const;
 
-export const policyLinks = [
+/** 푸터 링크. 모든 페이지(모바일 포함)에서 홈·게임 목록·정보·정책 페이지로 이동할 수 있게 한다. */
+export const footerLinks = [
+  { href: "/", label: "홈" },
+  { href: "/#games", label: "전체 게임" },
   { href: "/about", label: "사이트 소개" },
-  { href: "/contact", label: "문의하기" },
   { href: "/privacy", label: "개인정보처리방침" },
   { href: "/terms", label: "이용약관" },
+  { href: "/contact", label: "문의하기" },
 ] as const;
 
 /**

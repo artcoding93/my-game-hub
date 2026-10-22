@@ -4,7 +4,7 @@
  */
 
 /** 게임 설명에 반드시 들어가는 핵심 규칙 문장 (시작 화면·HOW TO PLAY·게임 소개) */
-export const RULE_SENTENCE = "블록이 착지하면 위쪽에 새로운 블록이 생성됩니다. 겨울의 방해 요소를 극복하고 최대한 많은 줄을 완성하세요!";
+export const RULE_SENTENCE = "블록이 착지하면 위쪽에 1칸짜리 혹이 생깁니다. 겨울의 방해 요소를 극복하고 최대한 많은 줄을 완성하세요!";
 
 export interface LevelInfo {
   level: number;

@@ -4,7 +4,7 @@ import { ContentPage } from "@/components/ContentPage";
 import { TodoMark } from "@/components/TodoMark";
 import { INDEXABLE, operatorConfig, siteConfig, socialMetadata } from "@/lib/site";
 
-const DESCRIPTION = `${siteConfig.name}이 처리하는 개인정보의 항목, 목적, 보관 기간과 이용자의 권리를 안내합니다.`;
+const DESCRIPTION = `${siteConfig.name}이 처리하는 개인정보의 항목과 목적, 보관 기간, 브라우저 저장소(localStorage) 사용 내역, 쿠키·광고 사용 여부와 이용자의 권리를 안내합니다.`;
 
 export const metadata: Metadata = {
   title: "개인정보처리방침",
@@ -29,7 +29,8 @@ export const metadata: Metadata = {
  *       Lost Relic (my-game-hub:lost-relic:sound, my-game-hub:lost-relic:music),
  *       Winter Blocks (my-game-hub:winter-blocks:high-score, :sound, :music, :track — 선택한 배경음악 번호)
  *   - 방문 통계: Vercel Web Analytics (쿠키 없음, src/app/layout.tsx의 <Analytics />)
- *   - 쿠키·광고: 사용하지 않음
+ *   - 쿠키·광고·Google Analytics: 사용하지 않음 (Google AdSense는 도입 예정 — 본문 3번에 "도입 예정"으로 구분 표기)
+ *   - 외부 API 호출: 없음. 글꼴(next/font)은 빌드 시 내려받아 이 사이트에서 제공한다. 문의 입력 양식 없음(이메일만).
  *
  * TODO(AdSense 연결 시 반드시 개정):
  *   - Google 및 제3자 광고 사업자의 쿠키 사용, 맞춤 광고 해제 방법(https://adssettings.google.com) 안내
@@ -127,21 +128,34 @@ export default function PrivacyPage() {
         모드에서는 창을 닫을 때 자동으로 삭제됩니다.
       </p>
 
-      <h2>3. 쿠키</h2>
+      <h2>3. 쿠키와 광고</h2>
       <p>
-        사이트는 현재 쿠키를 사용하지 않으며, 광고를 사용하지 않습니다. 방문 통계(Vercel Web Analytics)도
-        쿠키 없이 동작합니다. 앞으로 광고나 쿠키를 쓰는 분석 도구를 도입하는 경우, 시행 전에 이 방침을
-        개정해 사용하는 서비스와 쿠키, 거부 방법을 안내하겠습니다. 방문 통계 수집을 원하지 않으면 브라우저의
-        추적 방지 기능이나 콘텐츠 차단 확장 프로그램을 사용할 수 있습니다.
+        <strong>현재 상태:</strong> 사이트는 현재 쿠키를 사용하지 않으며, 광고 서비스와 Google Analytics 같은
+        쿠키 기반 분석 도구도 사용하지 않습니다. 방문 통계(Vercel Web Analytics)는 쿠키 없이 동작합니다. 방문 통계
+        수집을 원하지 않으면 브라우저의 추적 방지 기능이나 콘텐츠 차단 확장 프로그램을 사용할 수 있습니다.
+      </p>
+      <p>
+        <strong>도입 예정:</strong> 사이트 운영 비용 마련을 위해 앞으로 Google AdSense 광고를 게재할 계획입니다.
+        현재는 광고 코드가 설치되어 있지 않으며 광고 관련 쿠키나 정보도 수집하지 않습니다. 광고를 실제로 도입하는
+        경우 시행 전에 이 방침을 개정해 Google 등 광고 사업자의 쿠키 사용, 맞춤 광고를 거부하는 방법, 처리 위탁 및
+        국외 이전 내용을 안내하겠습니다.
       </p>
 
-      <h2>4. 제3자 제공</h2>
+      <h2>4. 외부 서비스 연결</h2>
+      <p>
+        게임은 이용자의 브라우저 안에서만 동작하며, 게임 진행 중 점수나 기록을 외부 서버나 API로 보내지 않습니다.
+        사이트의 글꼴, 이미지, 게임 효과음과 배경음악은 모두 이 사이트에서 직접 제공하거나 브라우저에서 생성하며,
+        외부 글꼴·음원 서버에서 불러오지 않습니다. 호스팅·방문 통계를 맡은 Vercel과 이메일 문의를 받는 메일 서비스(6번 표) 외에
+        이용자 정보를 받는 외부 서비스는 없습니다.
+      </p>
+
+      <h2>5. 제3자 제공</h2>
       <p>
         사이트는 이용자의 개인정보를 제3자에게 제공하지 않습니다. 다만 법령에 특별한 규정이 있거나 수사기관이
         법령에 정한 절차에 따라 요청하는 경우는 예외로 합니다.
       </p>
 
-      <h2>5. 처리 위탁 및 국외 이전</h2>
+      <h2>6. 처리 위탁 및 국외 이전</h2>
       <p>사이트는 서비스 제공을 위해 아래와 같이 개인정보 처리 업무를 맡기고 있습니다.</p>
       <div className="overflow-x-auto">
       <table className="min-w-[32rem]">
@@ -182,31 +196,31 @@ export default function PrivacyPage() {
         원하지 않는 경우 사이트 이용이나 이메일 문의를 하지 않을 수 있으나, 이 경우 서비스 이용이 제한됩니다.
       </p>
 
-      <h2>6. 파기</h2>
+      <h2>7. 파기</h2>
       <p>
         보관 기간이 지나거나 처리 목적이 달성된 개인정보는 지체 없이 파기합니다. 전자 파일은 복구할 수 없는
         방법으로 삭제합니다.
       </p>
 
-      <h2>7. 이용자의 권리</h2>
+      <h2>8. 이용자의 권리</h2>
       <p>
         이용자는 언제든지 자신의 개인정보 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다. 아래 개인정보
         보호책임자에게 이메일로 요청하면 지체 없이 처리하겠습니다. 브라우저에 저장된 게임 기록은 2번 항목의
         방법으로 직접 삭제할 수 있습니다.
       </p>
 
-      <h2>8. 안전성 확보 조치</h2>
+      <h2>9. 안전성 확보 조치</h2>
       <p>
         사이트는 모든 통신을 HTTPS로 암호화하며, 문의 기록에 접근할 수 있는 사람을 운영자로 제한합니다.
       </p>
 
-      <h2>9. 만 14세 미만 아동</h2>
+      <h2>10. 만 14세 미만 아동</h2>
       <p>
         사이트는 회원가입이 없고 아동의 개인정보를 따로 수집하지 않습니다. 만 14세 미만 아동이 이메일로 문의하는
         경우 법정대리인의 동의가 필요할 수 있습니다.
       </p>
 
-      <h2>10. 개인정보 보호책임자</h2>
+      <h2>11. 개인정보 보호책임자</h2>
       <ul>
         <li>
           성명: <TodoMark label="개인정보 보호책임자 성명" value={operatorConfig.privacyOfficer} />
@@ -215,6 +229,7 @@ export default function PrivacyPage() {
           이메일:{" "}
           <TodoMark
             label="문의용 이메일 주소"
+            message="운영자 이메일 입력 필요"
             value={
               operatorConfig.email && <a href={`mailto:${operatorConfig.email}`}>{operatorConfig.email}</a>
             }
@@ -231,7 +246,7 @@ export default function PrivacyPage() {
         <li>경찰청: ecrm.police.go.kr / 국번 없이 182</li>
       </ul>
 
-      <h2>11. 방침의 변경</h2>
+      <h2>12. 방침의 변경</h2>
       <p>
         이 방침을 바꾸는 경우 시행 7일 전부터 이 페이지를 통해 알립니다. 문의는{" "}
         <Link href="/contact">문의하기</Link> 페이지를 이용해 주세요.

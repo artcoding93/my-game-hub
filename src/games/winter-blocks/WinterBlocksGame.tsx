@@ -85,7 +85,7 @@ export default function WinterBlocksGame() {
           </Panel>
         </aside>
 
-        <div className="relative aspect-[1/2] w-[min(calc(100vw-9.5rem),calc((100dvh-18rem)/2),20rem)] min-w-40 shrink-0 overflow-hidden rounded-lg border-2 border-indigo-300/40 shadow-[0_0_24px_rgba(165,180,252,0.25)] pointer-coarse:w-[min(calc(100vw-9.5rem),calc((100dvh-26rem)/2),20rem)]">
+        <div className="relative aspect-[1/2] w-[min(calc(100vw-11rem),calc((100dvh-18rem)/2),20rem)] min-w-36 shrink-0 overflow-hidden rounded-lg border-2 border-indigo-300/40 shadow-[0_0_24px_rgba(165,180,252,0.25)] pointer-coarse:w-[min(calc(100vw-11rem),calc((100dvh-26rem)/2),20rem)]">
           <canvas ref={boardRef} className="h-full w-full touch-none" aria-label="Winter Blocks 게임판" />
           <Overlay game={game} />
         </div>

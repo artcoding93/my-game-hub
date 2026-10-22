@@ -30,11 +30,11 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
   if (!game) return {};
 
   const path = getGamePath(game.slug);
-  const title = `${game.title} - 무료 온라인 ${CATEGORY_LABELS[game.category]} 게임`;
-  const fullTitle = game.seoTitle ?? `${title} | ${siteConfig.name}`;
+  const title = game.seoTitle ?? `${game.title} - 무료 온라인 ${CATEGORY_LABELS[game.category]} 게임`;
+  const fullTitle = `${title} | ${siteConfig.name}`;
 
   return {
-    title: game.seoTitle ? { absolute: game.seoTitle } : title,
+    title,
     description: game.description,
     keywords: game.keywords,
     alternates: { canonical: path },
@@ -170,6 +170,10 @@ function GameDetails({ game }: { game: GameMeta }) {
         </ul>
       </DetailSection>
 
+      <DetailSection id="goal" title="게임 목표">
+        <p className="text-zinc-700 dark:text-zinc-300">{game.goal}</p>
+      </DetailSection>
+
       <DetailSection id="play-info" title="플레이 안내">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-zinc-700 dark:text-zinc-300">
           <dt className="font-medium text-foreground">이용 요금</dt>
@@ -196,6 +200,22 @@ function GameDetails({ game }: { game: GameMeta }) {
             <li key={rule}>{rule}</li>
           ))}
         </ol>
+      </DetailSection>
+
+      <DetailSection id="scoring" title="점수 획득 방식">
+        <ul className="list-disc space-y-1 pl-6 text-zinc-700 dark:text-zinc-300">
+          {game.scoring.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </DetailSection>
+
+      <DetailSection id="difficulty" title={game.difficulty.title}>
+        <ul className="list-disc space-y-1 pl-6 text-zinc-700 dark:text-zinc-300">
+          {game.difficulty.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
       </DetailSection>
 
       {game.tips && game.tips.length > 0 && (

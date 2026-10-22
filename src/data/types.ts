@@ -28,7 +28,7 @@ export interface GameMeta {
   aliases?: string[];
   title: string;
   /**
-   * 검색 결과 제목을 그대로 지정할 때만 쓴다(사이트 이름까지 포함한 전체 제목).
+   * 검색 결과 제목을 직접 지정할 때만 쓴다. 사이트 이름은 쓰지 않는다(" | {사이트 이름}"이 자동으로 붙는다).
    * 없으면 "{title} - 무료 온라인 {장르} 게임 | {사이트 이름}" 형식으로 만든다.
    */
   seoTitle?: string;
@@ -41,8 +41,18 @@ export interface GameMeta {
   about: string[];
   /** 게임 페이지 "주요 특징" 목록 (짧은 문장 3~4개) */
   features: string[];
-  /** 게임 페이지 "게임 규칙" 목록 */
+  /** 게임 페이지 "게임 목표" 문단 (승리·클리어 조건 또는 무엇을 노리는 게임인지) */
+  goal: string;
+  /** 게임 페이지 "게임 규칙" 목록 (점수와 난이도는 아래 별도 항목에 쓴다) */
   rules: string[];
+  /** 게임 페이지 "점수 획득 방식" 목록 (실제 config 값과 일치해야 한다) */
+  scoring: string[];
+  /** 게임 페이지 난이도·스테이지 항목 */
+  difficulty: {
+    /** 섹션 제목. 예: "스테이지와 난이도", "6단계 난이도" */
+    title: string;
+    items: string[];
+  };
   /** 게임 페이지 "공략 팁" 목록 (선택) */
   tips?: string[];
   category: GameCategory;

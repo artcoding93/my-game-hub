@@ -43,7 +43,7 @@ export default function SnakeGame() {
     >
       <Scoreboard score={state.score} highScore={state.highScore} length={state.snake.length} />
 
-      <div className="relative" {...touchHandlers}>
+      <div className="relative touch-none" {...touchHandlers}>
         <canvas
           ref={canvasRef}
           role="img"

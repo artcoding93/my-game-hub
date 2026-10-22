@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { policyLinks, siteConfig } from "@/lib/site";
+import { footerLinks, siteConfig } from "@/lib/site";
 
 export function SiteFooter() {
   return (
@@ -13,10 +13,10 @@ export function SiteFooter() {
           </p>
         </div>
         <nav aria-label="사이트 정보">
-          <ul className="flex flex-wrap gap-x-4 gap-y-2">
-            {policyLinks.map((link) => (
+          <ul className="flex flex-wrap gap-x-4 gap-y-1">
+            {footerLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="hover:text-foreground hover:underline">
+                <Link href={link.href} className="inline-block py-1.5 hover:text-foreground hover:underline">
                   {link.label}
                 </Link>
               </li>

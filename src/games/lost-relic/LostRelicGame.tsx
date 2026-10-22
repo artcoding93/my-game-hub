@@ -179,7 +179,7 @@ function PixelIcon({ item, size = 20 }: { item: ItemId; size?: number }) {
 
 function OverlayBox({ children }: { children: ReactNode }) {
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 overflow-y-auto bg-stone-950/80 p-3 text-center">
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center-safe gap-3 overflow-y-auto bg-stone-950/80 p-3 text-center">
       {children}
     </div>
   );
@@ -459,7 +459,7 @@ function ItemBar({ hud, controller }: { hud: HudState; controller: LostRelicCont
               aria-pressed={hud.selected === id}
               aria-label={`${ITEMS[id].name} ${count}개 선택`}
               title={ITEMS[id].name}
-              className={`relative flex h-10 w-10 items-center justify-center border-2 ${hud.selected === id ? "border-amber-400 bg-amber-400/15" : "border-transparent hover:border-stone-600"}`}
+              className={`relative flex h-11 w-11 items-center justify-center border-2 ${hud.selected === id ? "border-amber-400 bg-amber-400/15" : "border-transparent hover:border-stone-600"}`}
             >
               <PixelIcon item={id} size={22} />
               {count > 1 && <span className="absolute right-0 bottom-0 bg-stone-950 px-0.5 text-[7px] text-amber-300">{count}</span>}
@@ -555,10 +555,11 @@ function TouchControls({ controller, hud }: { controller: LostRelicController; h
   });
   const playing = hud.phase === "playing";
 
+  // 380px 미만 화면에서는 버튼을 줄여(최소 44px 유지) 가로 스크롤을 막는다.
   const pad =
-    "flex h-14 w-14 items-center justify-center rounded-xl border-2 border-amber-800 bg-stone-900 text-xl text-amber-200 active:bg-amber-900 select-none touch-none";
+    "flex h-14 w-14 max-[379px]:h-12 max-[379px]:w-12 items-center justify-center rounded-xl border-2 border-amber-800 bg-stone-900 text-xl text-amber-200 active:bg-amber-900 select-none touch-none";
   const action =
-    "flex h-14 min-w-14 flex-col items-center justify-center rounded-xl border-2 px-2 text-[9px] leading-tight select-none touch-none";
+    "flex h-14 min-w-14 max-[379px]:h-12 max-[379px]:min-w-12 flex-col items-center justify-center rounded-xl border-2 px-2 text-[9px] leading-tight select-none touch-none";
 
   return (
     <div className="hidden items-end justify-between gap-2 pt-1 pointer-coarse:flex" aria-label="터치 조작">

@@ -147,7 +147,7 @@ function Overlay({ hud, onPrimary }: { hud: HudState; onPrimary: () => void }) {
 
 function KeyGuide() {
   return (
-    <dl className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-left font-sans text-[10px] text-zinc-300 sm:text-xs">
+    <dl className="grid grid-cols-[auto_auto] gap-x-3 pointer-coarse:hidden gap-y-0.5 text-left font-sans text-[10px] text-zinc-300 sm:text-xs">
       <dt className="text-yellow-200">← →</dt>
       <dd>좌우 이동 · 로프 이동</dd>
       <dt className="text-yellow-200">↑ ↓</dt>
@@ -163,7 +163,7 @@ function KeyGuide() {
 }
 
 const actionButtonClass =
-  "h-10 min-w-24 border-2 px-3 text-[9px] uppercase tracking-wider transition-colors active:translate-y-px disabled:opacity-30 sm:text-[10px]";
+  "h-11 min-w-24 border-2 px-3 text-[9px] uppercase tracking-wider transition-colors active:translate-y-px disabled:opacity-30 sm:text-[10px]";
 
 interface SoundControls {
   sfxOn: boolean;
@@ -193,6 +193,16 @@ function ActionBar({ hud, controller, sound }: { hud: HudState; controller: Gold
           className={`${actionButtonClass} border-yellow-400 text-yellow-300 hover:bg-yellow-400/10`}
         >
           {hud.phase === "paused" ? "Resume" : "Pause"}
+        </button>
+      )}
+      {hud.phase === "playing" && (
+        // 키보드 R과 같은 동작. 터치 기기에서 구멍에 갇혔을 때 빠져나올 방법이 없지 않도록 둔다.
+        <button
+          type="button"
+          onClick={() => controller.selfDestruct()}
+          className={`${actionButtonClass} hidden border-zinc-500 text-zinc-300 hover:bg-zinc-700/40 pointer-coarse:block`}
+        >
+          Retry -1
         </button>
       )}
       <SoundToggle kind="sfx" on={sound.sfxOn} onToggle={sound.toggleSfx} />
@@ -260,11 +270,12 @@ function TouchControls({ controller }: { controller: GoldEscapeController }) {
     onLostPointerCapture: () => controller.input.release(direction),
   });
 
-  const pad = "flex h-14 w-14 items-center justify-center rounded-xl border-2 border-zinc-600 bg-zinc-900 text-lg text-zinc-100 active:bg-zinc-700 select-none touch-none";
-  const dig = "flex h-14 w-16 flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-orange-950 text-[9px] text-orange-200 active:bg-orange-800 select-none touch-none";
+  // 380px 미만 화면에서는 버튼을 줄여(최소 44px 유지) 가로 스크롤을 막는다.
+  const pad = "flex h-14 w-14 max-[379px]:h-11 max-[379px]:w-11 items-center justify-center rounded-xl border-2 border-zinc-600 bg-zinc-900 text-lg text-zinc-100 active:bg-zinc-700 select-none touch-none";
+  const dig = "flex h-14 w-16 max-[379px]:h-12 max-[379px]:w-14 flex-col items-center justify-center rounded-xl border-2 border-orange-500 bg-orange-950 text-[9px] text-orange-200 active:bg-orange-800 select-none touch-none";
 
   return (
-    <div className="hidden items-end justify-between gap-4 pt-1 pointer-coarse:flex" aria-label="터치 조작">
+    <div className="hidden items-end justify-between gap-2 pt-1 pointer-coarse:flex sm:gap-4" aria-label="터치 조작">
       <div className="grid grid-cols-3 grid-rows-3 gap-1">
         <span />
         <button type="button" aria-label="위" className={pad} {...hold("up")}>▲</button>
