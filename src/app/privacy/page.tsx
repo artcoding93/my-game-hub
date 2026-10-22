@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPage } from "@/components/ContentPage";
 import { TodoMark } from "@/components/TodoMark";
-import { INDEXABLE, operatorConfig, siteConfig } from "@/lib/site";
+import { INDEXABLE, operatorConfig, siteConfig, socialMetadata } from "@/lib/site";
+
+const DESCRIPTION = `${siteConfig.name}이 처리하는 개인정보의 항목, 목적, 보관 기간과 이용자의 권리를 안내합니다.`;
 
 export const metadata: Metadata = {
   title: "개인정보처리방침",
-  description: `${siteConfig.name}가 처리하는 개인정보의 항목, 목적, 보관 기간과 이용자의 권리를 안내합니다.`,
+  description: DESCRIPTION,
   alternates: { canonical: "/privacy" },
   robots: INDEXABLE,
+  ...socialMetadata({ title: `개인정보처리방침 | ${siteConfig.name}`, description: DESCRIPTION, path: "/privacy" }),
 };
 
 /*

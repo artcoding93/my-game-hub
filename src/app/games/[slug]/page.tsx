@@ -7,7 +7,7 @@ import { GamePageLayout } from "@/components/GamePageLayout";
 import type { GameControl, GameMeta } from "@/data/types";
 import { GameLoader } from "@/games/registry";
 import { CATEGORY_LABELS, getAllGames, getGameBySlug, getGamePath } from "@/lib/games";
-import { INDEXABLE, siteConfig } from "@/lib/site";
+import { absoluteUrl, INDEXABLE, siteConfig, socialMetadata } from "@/lib/site";
 
 // Cache Components 환경에서는 `dynamicParams = false`를 쓸 수 없으므로,
 // 목록에 없는 slug는 페이지에서 notFound()로 처리한다.
@@ -38,19 +38,12 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
     keywords: game.keywords,
     alternates: { canonical: path },
     robots: INDEXABLE,
-    openGraph: {
-      type: "website",
-      title,
+    ...socialMetadata({
+      title: `${title} | ${siteConfig.name}`,
       description: game.description,
-      url: path,
+      path,
       images: [{ url: game.thumbnail, alt: `${game.title} 게임 화면` }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description: game.description,
-      images: [game.thumbnail],
-    },
+    }),
   };
 }
 
@@ -72,6 +65,7 @@ function GameJsonLd({ game }: { game: GameMeta }) {
     datePublished: game.releasedAt,
     isAccessibleForFree: true,
     offers: { "@type": "Offer", price: 0, priceCurrency: "KRW" },
+    isPartOf: { "@type": "WebSite", name: siteConfig.name, alternateName: siteConfig.alternateName, url: absoluteUrl("/") },
   };
 
   return (
@@ -165,6 +159,27 @@ function GameDetails({ game }: { game: GameMeta }) {
             {paragraph}
           </p>
         ))}
+      </DetailSection>
+
+      <DetailSection id="features" title="주요 특징">
+        <ul className="list-disc space-y-1 pl-6 text-zinc-700 dark:text-zinc-300">
+          {game.features.map((feature) => (
+            <li key={feature}>{feature}</li>
+          ))}
+        </ul>
+      </DetailSection>
+
+      <DetailSection id="play-info" title="플레이 안내">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-zinc-700 dark:text-zinc-300">
+          <dt className="font-medium text-foreground">이용 요금</dt>
+          <dd>무료 · 회원가입이나 앱 설치 없이 이 페이지에서 바로 시작합니다.</dd>
+          <dt className="font-medium text-foreground">PC</dt>
+          <dd>Chrome, Edge, Safari, Firefox 등 최신 브라우저에서 키보드로 플레이합니다.</dd>
+          <dt className="font-medium text-foreground">모바일</dt>
+          <dd>스마트폰·태블릿 브라우저에서 터치로 플레이합니다. 자세한 방법은 아래 조작 방법을 참고하세요.</dd>
+          <dt className="font-medium text-foreground">기록 저장</dt>
+          <dd>점수와 설정은 서버가 아닌 사용 중인 브라우저에만 저장됩니다.</dd>
+        </dl>
       </DetailSection>
 
       <DetailSection id="controls" title="조작 방법">

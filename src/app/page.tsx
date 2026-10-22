@@ -3,15 +3,39 @@ import Link from "next/link";
 import { AdSlot } from "@/components/AdSlot";
 import { GameCard } from "@/components/GameCard";
 import { getAllGames } from "@/lib/games";
-import { INDEXABLE, siteConfig } from "@/lib/site";
+import { absoluteUrl, INDEXABLE, siteConfig, socialMetadata } from "@/lib/site";
+
+const HOME_TITLE = `${siteConfig.name} | ${siteConfig.tagline}`;
+// 게임을 추가·공개하면 이 문장의 게임 목록도 함께 고친다.
+const HOME_DESCRIPTION = `${siteConfig.name}에서 Snake Classic, Gold Escape, Star Vanguard, Lost Relic 등 다양한 레트로 아케이드 게임을 무료로 즐겨보세요. PC와 모바일에서 설치 없이 바로 플레이할 수 있습니다.`;
 
 export const metadata: Metadata = {
-  title: { absolute: `${siteConfig.name} - 설치 없이 즐기는 무료 브라우저 미니게임` },
-  description:
-    "Snake Classic, Gold Escape, Star Vanguard 등 설치나 회원가입 없이 PC와 모바일 브라우저에서 바로 즐기는 무료 레트로 2D 미니게임 모음입니다.",
+  title: { absolute: HOME_TITLE },
+  description: HOME_DESCRIPTION,
   alternates: { canonical: "/" },
   robots: INDEXABLE,
+  ...socialMetadata({ title: HOME_TITLE, description: HOME_DESCRIPTION, path: "/" }),
 };
+
+/** 검색엔진이 사이트 이름(ArtCoding Game / ArtCoding)을 알 수 있도록 하는 schema.org WebSite 구조화 데이터. 홈에만 둔다. */
+function WebSiteJsonLd() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteConfig.name,
+    alternateName: siteConfig.alternateName,
+    url: absoluteUrl("/"),
+    description: HOME_DESCRIPTION,
+    inLanguage: "ko",
+  };
+  return (
+    <script
+      type="application/ld+json"
+      // `<`를 이스케이프해 문자열 안의 </script> 주입을 막는다.
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+    />
+  );
+}
 
 const FEATURES = [
   {
@@ -33,14 +57,22 @@ export default function Home() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-8 lg:py-12">
+      <WebSiteJsonLd />
       <section aria-labelledby="intro-heading" className="flex flex-col gap-4">
         <h1 id="intro-heading" className="text-3xl font-bold tracking-tight sm:text-4xl">
           {siteConfig.name}
+          <span className="mt-2 block text-lg font-medium text-zinc-600 sm:text-xl dark:text-zinc-400">
+            {siteConfig.tagline}
+          </span>
         </h1>
         <p className="max-w-2xl text-base leading-7 text-zinc-600 sm:text-lg dark:text-zinc-400">
-          {siteConfig.name}는 설치 없이 브라우저에서 바로 즐기는 2D 미니게임 모음입니다. 스네이크처럼
-          누구나 아는 고전 아케이드 게임을 시작으로, 짧은 시간에 가볍게 즐길 수 있는 게임을 하나씩
-          늘려 가고 있습니다.
+          {siteConfig.name}({siteConfig.alternateName})은 설치나 회원가입 없이 브라우저에서 바로 즐기는 무료 온라인 게임
+          사이트입니다. 고전 스네이크를 다시 만든 Snake Classic, 금괴를 모아 탈출하는 퍼즐 플랫폼 게임 Gold
+          Escape, 편대를 이룬 드론과 싸우는 우주 슈팅 Star Vanguard, 상자를 열고 비밀 통로를 찾는 탐험
+          어드벤처 Lost Relic까지 1980년대 8비트 감성의 레트로 아케이드 게임을 직접 만들어 소개합니다.
+        </p>
+        <p className="max-w-2xl text-sm leading-6 text-zinc-500">
+          모든 게임은 PC에서는 키보드로, 스마트폰과 태블릿에서는 터치로 플레이할 수 있습니다.
         </p>
         <div>
           <Link

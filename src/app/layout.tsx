@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
     template: `%s | ${siteConfig.name}`,
-    default: `${siteConfig.name} - 무료 브라우저 미니게임`,
+    default: `${siteConfig.name} | ${siteConfig.tagline}`,
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
@@ -29,6 +29,7 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     locale: siteConfig.locale,
   },
+  twitter: { card: "summary" },
 };
 
 export const viewport: Viewport = {

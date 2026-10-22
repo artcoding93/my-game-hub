@@ -34,6 +34,8 @@ export interface GameMeta {
   keywords: string[];
   /** 게임 페이지 "게임 소개" 본문 (문단 단위) */
   about: string[];
+  /** 게임 페이지 "주요 특징" 목록 (짧은 문장 3~4개) */
+  features: string[];
   /** 게임 페이지 "게임 규칙" 목록 */
   rules: string[];
   /** 게임 페이지 "공략 팁" 목록 (선택) */

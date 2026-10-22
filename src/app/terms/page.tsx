@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentPage } from "@/components/ContentPage";
 import { TodoMark } from "@/components/TodoMark";
-import { INDEXABLE, operatorConfig, siteConfig } from "@/lib/site";
+import { INDEXABLE, operatorConfig, siteConfig, socialMetadata } from "@/lib/site";
+
+const DESCRIPTION = `${siteConfig.name} 서비스 이용 조건과 이용자·운영자의 권리와 책임을 안내합니다.`;
 
 export const metadata: Metadata = {
   title: "이용약관",
-  description: `${siteConfig.name} 서비스 이용 조건과 이용자·운영자의 권리와 책임을 안내합니다.`,
+  description: DESCRIPTION,
   alternates: { canonical: "/terms" },
   robots: INDEXABLE,
+  ...socialMetadata({ title: `이용약관 | ${siteConfig.name}`, description: DESCRIPTION, path: "/terms" }),
 };
 
 export default function TermsPage() {

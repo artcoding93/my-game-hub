@@ -3,13 +3,16 @@ import Link from "next/link";
 import { ContentPage } from "@/components/ContentPage";
 import { TodoMark } from "@/components/TodoMark";
 import { getAllGames, getGamePath } from "@/lib/games";
-import { INDEXABLE, operatorConfig, siteConfig } from "@/lib/site";
+import { INDEXABLE, operatorConfig, siteConfig, socialMetadata } from "@/lib/site";
+
+const DESCRIPTION = `${siteConfig.name}은 설치 없이 PC와 모바일 브라우저에서 바로 즐기는 무료 레트로 아케이드 게임 사이트입니다. 사이트의 목적과 제공 게임, 운영 원칙을 소개합니다.`;
 
 export const metadata: Metadata = {
   title: "사이트 소개",
-  description: `${siteConfig.name}는 설치 없이 브라우저에서 바로 즐기는 무료 2D 미니게임 사이트입니다. 사이트의 목적과 제공 게임, 운영 원칙을 소개합니다.`,
+  description: DESCRIPTION,
   alternates: { canonical: "/about" },
   robots: INDEXABLE,
+  ...socialMetadata({ title: `사이트 소개 | ${siteConfig.name}`, description: DESCRIPTION, path: "/about" }),
 };
 
 export default function AboutPage() {
@@ -18,7 +21,7 @@ export default function AboutPage() {
   return (
     <ContentPage title="사이트 소개">
       <p>
-        {siteConfig.name}는 설치나 회원가입 없이 웹 브라우저에서 바로 즐길 수 있는 2D 미니게임을
+        {siteConfig.name}은 설치나 회원가입 없이 웹 브라우저에서 바로 즐길 수 있는 2D 미니게임을
         모아 둔 사이트입니다. 잠깐 쉬는 시간에 가볍게 즐길 수 있는 게임을 PC와 모바일 어디서나 같은
         방식으로 플레이할 수 있게 만드는 것을 목표로 합니다.
       </p>
@@ -46,7 +49,7 @@ export default function AboutPage() {
 
       <h2>운영자</h2>
       <p>
-        {siteConfig.name}는 <TodoMark label="운영자 이름 또는 상호" value={operatorConfig.name} />이(가)
+        {siteConfig.name}은 <TodoMark label="운영자 이름 또는 상호" value={operatorConfig.name} />이(가)
         운영합니다. 오류 제보나 게임 제안은 <Link href="/contact">문의하기</Link> 페이지를 이용해 주세요.
       </p>
     </ContentPage>
