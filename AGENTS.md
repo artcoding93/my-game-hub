@@ -99,7 +99,8 @@ src/
       logic/                 # 순수 TS: track(스플라인·거리장·진행 투영), physics(카트 물리·충돌), game(레이스 규칙·아이템·복구), ai(웨이포인트 추종),
                              #   rng, testUtils(테스트 전용), *.test.ts
       records.ts             # 기록 저장 형식·검증
-      input.ts, controller.ts, useTurboKart.ts, TurboKartGame.tsx, renderer.ts(카메라·Path2D 트랙·미니맵·캔버스 HUD), audio/(cues·sfx·music 3곡·KartAudio)
+      camera.ts              # 회전(chase)·고정(topdown) 카메라: 화면 변환·보간·컬링 범위 (그리기 전용, camera.test.ts)
+      input.ts, controller.ts, useTurboKart.ts, TurboKartGame.tsx, renderer.ts(Path2D 트랙·미니맵·캔버스 HUD), audio/(cues·sfx·music 3곡·KartAudio)
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
@@ -204,13 +205,15 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 
 ### Turbo Kart (Canvas 2D)
 - 규칙은 `logic/`에만 둔다. 플레이어와 AI는 같은 `DriveInput` → `physics.ts`(고정 1/60초, 충돌 2단계)를 쓴다. AI의 물리 값(최고 속도·가속)은 성향·난이도와 무관하게 같다.
-- 좌표는 월드 좌표만 규칙에 쓴다. 카메라(`renderer.ts`의 `Camera`)는 그리기 전용이며 회전하지 않는다.
+- 좌표는 월드 좌표만 규칙에 쓴다. 카메라(`camera.ts`)는 그리기 전용이다. 기본 "chase"는 카트를 화면 아래 가운데(anchorY)에 두고
+  카트 전방이 화면 위를 향하도록 월드를 돌려 그린다(지수 보간 + 최대 회전 속도 제한, 스핀 중 회전 정지). "topdown"은 북쪽이 위인 고정 시점.
+  조향 입력은 항상 카트 기준이며 카메라와 무관하다. 미니맵·HUD는 화면 고정(미니맵은 북쪽이 위). 회전 시 컬링은 `viewBounds`(화면 네 모서리 역변환)를 쓴다.
 - 진행·순위: 직전 위치 주변에서만 코스 위 위치를 다시 찾고(`projectProgress`) 변화량만큼 `dist`를 더한다. 체크포인트는 `dist`가 다음 체크포인트를 넘을 때 하나씩만 센다(순서 건너뛰기·역주행·왕복 악용 불가).
 - 벽: 메인 도로와 지름길이 겹치는 곳은 합친 영역이 주행 가능 영역이다(`wallContact`). 도로 판정을 바꿀 때 이 규칙을 유지한다.
 - 난이도는 장애물·상자·미끄러운 구간·아이템 확률만 바꾼다. `tracks.ts`의 장애물 `tier`로 쉬움 4~6 · 보통 8~10 · 어려움 12~15개, 움직이는 장애물 0 · 1~2 · 3~4개를 유지한다.
 - 트랙·장애물을 바꾸면 `npm run test:turbo-kart`를 돌린다(도로 겹침, 빈 폭, 분기점 근처 장애물, AI 4대 완주·순간이동·벽 통과 검사).
 - 난수는 `RaceState.rng`(시드)만 쓴다. `Math.random()`은 renderer 연출과 시드 생성에만 쓴다.
-- 저장: `my-game-hub:turbo-kart:records`, `:sound`, `:music`. 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__TURBO_KART__`(컨트롤러·오디오) 노출.
+- 저장: `my-game-hub:turbo-kart:records`, `:sound`, `:music`, `:camera`(1 = 회전 기본, 0 = 고정). 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__TURBO_KART__`(컨트롤러·오디오) 노출.
 - 저작권: 탑다운 카트 레이싱 장르만 참고했다. 카트·트랙·장애물 그래픽, BGM 3곡, 효과음은 모두 자체 제작이며 외부 에셋이 없다. 상용 레이싱 게임의 이름·캐릭터·트랙·음악을 쓰지 않는다.
 
 ### 광고 (AdSense)

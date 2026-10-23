@@ -182,4 +182,6 @@ export const STORAGE_KEYS = {
   records: "my-game-hub:turbo-kart:records",
   sfx: "my-game-hub:turbo-kart:sound",
   music: "my-game-hub:turbo-kart:music",
+  /** 카메라 방식: 1 = 회전(기본), 0 = 고정 탑다운 */
+  camera: "my-game-hub:turbo-kart:camera",
 } as const;

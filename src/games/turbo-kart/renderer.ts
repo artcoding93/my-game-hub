@@ -2,50 +2,19 @@ import { DIFFICULTY, DRIVERS, ITEM_FX, ITEMS, KART } from "./config";
 import { currentLap, PLAYER, rankOf, type Race } from "./logic/game";
 import { deltaS, pointAt, roadAt, type BuiltTrack } from "./logic/track";
 import { formatTime } from "./records";
+import { Camera, type CameraMode } from "./camera";
 import type { Difficulty, ItemId, Kart, RaceEvent, TrackId } from "./types";
 
 /*
  * Turbo Kart 캔버스 그리기 (자체 디자인 탑다운 아케이드). 레이스 상태를 읽기만 하고 바꾸지 않는다.
  *
- * 좌표: 규칙·충돌은 월드 좌표(트랙 크기, px)만 쓰고, 카메라는 그리기에서만 쓴다(월드 → 화면 변환).
- * 카메라: 플레이어를 부드럽게 따라가며 진행 방향 앞쪽을 더 보여 준다(Look-Ahead). 회전하지 않는다(조작 혼란 방지).
+ * 좌표: 규칙·충돌은 월드 좌표(트랙 크기, px)만 쓰고, 카메라(camera.ts)는 그리기에서만 쓴다(월드 → 화면 변환).
+ * 카메라: 기본은 회전 카메라(카트 전방이 항상 화면 위, 카트는 화면 아래쪽 가운데), 설정에서 고정 탑다운으로 바꿀 수 있다.
+ * 미니맵과 HUD는 화면 고정이며 미니맵은 항상 북쪽이 위다.
  * 확대 배율은 캔버스의 짧은 변 기준이라 가로(PC)·세로(모바일) 화면 모두 비슷한 거리를 보여 준다.
  * 성능: 트랙 도로·갓길·경계는 처음 한 번 Path2D로 만들어 두고 매 프레임 재사용하며, 장식은 화면 안에 있는 것만 그린다.
  * 연출용 파티클·스키드 자국은 Math.random()을 써도 된다(규칙과 무관).
  */
-
-/** 짧은 변이 이만큼의 월드 거리를 보여 준다 */
-const VIEW_SHORT_SIDE = 600;
-const LOOK_AHEAD_TIME = 0.42;
-const LOOK_AHEAD_MAX = 170;
-
-export class Camera {
-  x = 0;
-  y = 0;
-  private ready = false;
-
-  reset() {
-    this.ready = false;
-  }
-
-  update(kart: Kart, dt: number) {
-    const lx = Math.max(-LOOK_AHEAD_MAX, Math.min(LOOK_AHEAD_MAX, kart.vx * LOOK_AHEAD_TIME));
-    const ly = Math.max(-LOOK_AHEAD_MAX, Math.min(LOOK_AHEAD_MAX, kart.vy * LOOK_AHEAD_TIME));
-    const tx = kart.x + lx;
-    const ty = kart.y + ly;
-    if (!this.ready) {
-      this.x = tx;
-      this.y = ty;
-      this.ready = true;
-      return;
-    }
-    // 지수 감쇠로 부드럽게 따라간다 (프레임 속도와 무관). 복구 등으로 멀리 떨어지면 빠르게 따라잡는다.
-    const far = Math.hypot(tx - this.x, ty - this.y) > 600;
-    const k = 1 - Math.exp(-dt * (far ? 12 : 4.2));
-    this.x += (tx - this.x) * k;
-    this.y += (ty - this.y) * k;
-  }
-}
 
 export function prepareCanvas(canvas: HTMLCanvasElement, width: number, height: number): CanvasRenderingContext2D | null {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -276,7 +245,11 @@ interface Skid {
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 
 export class KartRenderer {
-  readonly camera = new Camera();
+  readonly camera = new Camera("chase");
+
+  setCameraMode(mode: CameraMode) {
+    this.camera.setMode(mode);
+  }
   private particles: Particle[] = [];
   private skids: Skid[] = [];
   private lastRear = new Map<number, { x: number; y: number }>();
@@ -385,23 +358,20 @@ export class KartRenderer {
     this.advance(race, frozen ? 0 : dt);
     const player = state.karts[PLAYER];
     if (!frozen) this.camera.update(player, dt);
-    const zoom = Math.min(width, height) / VIEW_SHORT_SIDE;
     const art = artFor(track);
+    /** 화면 기준 위쪽으로 세울 글자(이름표 등)를 위한 회전 보정 */
+    const upright = -this.camera.rotation();
     const def = track.def;
     const pal = def.palette;
 
-    // 보이는 월드 범위 (컬링용)
-    const halfW = width / 2 / zoom + 60;
-    const halfH = height / 2 / zoom + 60;
-    const view = { x0: this.camera.x - halfW, x1: this.camera.x + halfW, y0: this.camera.y - halfH, y1: this.camera.y + halfH };
+    // 보이는 월드 범위 (컬링용): 회전해도 화면 네 모서리를 모두 덮는다
+    const view = this.camera.viewBounds(width, height);
     const visible = (x: number, y: number, r = 40) => x > view.x0 - r && x < view.x1 + r && y > view.y0 - r && y < view.y1 + r;
 
     ctx.fillStyle = pal.ground;
     ctx.fillRect(0, 0, width, height);
     ctx.save();
-    ctx.translate(width / 2, height / 2);
-    ctx.scale(zoom, zoom);
-    ctx.translate(-this.camera.x, -this.camera.y);
+    this.camera.apply(ctx, width, height);
 
     // 땅 무늬
     ctx.fillStyle = pal.groundDark;
@@ -478,7 +448,7 @@ export class KartRenderer {
     }
 
     // 아이템 상자, 오일, 장애물
-    for (const box of state.boxes) if (box.respawn === 0 && visible(box.x, box.y)) drawItemBox(ctx, box.x, box.y, this.clock);
+    for (const box of state.boxes) if (box.respawn === 0 && visible(box.x, box.y)) drawItemBox(ctx, box.x, box.y, this.clock, upright);
     for (const oil of state.oils) {
       if (!visible(oil.x, oil.y)) continue;
       ctx.globalAlpha = Math.min(1, oil.life);
@@ -496,7 +466,7 @@ export class KartRenderer {
     for (const m of state.movers) if (visible(m.x, m.y)) drawObstacle(ctx, m.kind, m.x, m.y, m.r, this.clock);
 
     // 카트
-    for (const k of state.karts) if (visible(k.x, k.y)) drawKart(ctx, k, this.clock);
+    for (const k of state.karts) if (visible(k.x, k.y)) drawKart(ctx, k, this.clock, upright);
 
     // 투사체
     for (const p of state.projectiles) {
@@ -704,7 +674,7 @@ function drawFinishLine(ctx: CanvasRenderingContext2D, f: { x: number; y: number
   ctx.restore();
 }
 
-function drawItemBox(ctx: CanvasRenderingContext2D, x: number, y: number, clock: number) {
+function drawItemBox(ctx: CanvasRenderingContext2D, x: number, y: number, clock: number, upright: number) {
   const r = ITEM_FX.boxRadius;
   ctx.save();
   ctx.translate(x, y);
@@ -721,7 +691,7 @@ function drawItemBox(ctx: CanvasRenderingContext2D, x: number, y: number, clock:
   ctx.strokeStyle = "#ffffff";
   ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.rotate(-(Math.sin(clock * 2) * 0.3 + 0.4));
+  ctx.rotate(-(Math.sin(clock * 2) * 0.3 + 0.4) + upright);
   ctx.fillStyle = "#ffffff";
   ctx.font = "900 15px ui-sans-serif, system-ui, sans-serif";
   ctx.textAlign = "center";
@@ -958,7 +928,7 @@ function drawObstacle(ctx: CanvasRenderingContext2D, kind: string, x: number, y:
 }
 
 /** 카트: 드라이버마다 색과 앞부분 모양이 다르다 (YOU 줄무늬, Bolt 뾰족한 코, Luna 둥근 몸체, Dash 넓은 날개) */
-function drawKart(ctx: CanvasRenderingContext2D, k: Kart, clock: number) {
+function drawKart(ctx: CanvasRenderingContext2D, k: Kart, clock: number, upright: number) {
   const d = DRIVERS[k.id];
   ctx.save();
   ctx.translate(k.x, k.y);
@@ -1058,13 +1028,17 @@ function drawKart(ctx: CanvasRenderingContext2D, k: Kart, clock: number) {
     ctx.arc(k.x, k.y, KART.radius + 4, 0, Math.PI * 2);
     ctx.stroke();
   }
-  // 이름표
+  // 이름표: 회전 카메라에서도 화면 기준으로 카트 위쪽에 똑바로 선다
+  ctx.save();
+  ctx.translate(k.x, k.y);
+  ctx.rotate(upright);
   ctx.font = "800 11px ui-sans-serif, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.lineWidth = 3;
   ctx.strokeStyle = "rgba(15,23,42,0.8)";
-  ctx.strokeText(d.name, k.x, k.y - 22);
+  ctx.strokeText(d.name, 0, -22);
   ctx.fillStyle = d.color;
-  ctx.fillText(d.name, k.x, k.y - 22);
+  ctx.fillText(d.name, 0, -22);
+  ctx.restore();
 }
 

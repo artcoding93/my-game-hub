@@ -43,6 +43,15 @@ const ghost = `${btn} border-slate-500 text-slate-300 hover:bg-slate-400/10`;
 function SoundToggles({ game }: { game: KartGameApi }) {
   return (
     <>
+      <button
+        type="button"
+        onClick={game.toggleCamera}
+        aria-label={game.cameraMode === "chase" ? "카메라: 회전 (누르면 고정 탑다운)" : "카메라: 고정 탑다운 (누르면 회전)"}
+        title="회전 카메라: 카트 전방이 항상 화면 위 / 고정: 북쪽이 위"
+        className={secondary}
+      >
+        CAM <span className="ml-1 font-sans text-[11px] normal-case">{game.cameraMode === "chase" ? "회전" : "고정"}</span>
+      </button>
       <button type="button" onClick={game.toggleSound} aria-pressed={game.soundOn} aria-label={game.soundOn ? "효과음 끄기" : "효과음 켜기"} className={game.soundOn ? secondary : ghost}>
         SFX {game.soundOn ? "On" : "Off"}
       </button>
@@ -123,6 +132,7 @@ function HowTo({ game }: { game: KartGameApi }) {
       <ul className="list-disc space-y-1 pl-5">
         <li>PC: W/↑ 가속, S/↓ 브레이크, A·D/←·→ 조향, Shift 드리프트, Space 부스터, E 아이템, P/Esc 일시정지</li>
         <li>모바일: 화면 아래 버튼. 조향·가속·드리프트를 동시에 누를 수 있습니다.</li>
+        <li>CAM 버튼: 회전 카메라(카트 전방이 항상 화면 위, 기본)와 고정 탑다운(북쪽이 위) 중에서 고릅니다. 조향은 어느 쪽이든 카트 기준입니다.</li>
         <li>빠르게 달리며 Shift를 누른 채 조향하면 드리프트. 옆으로 미끄러지는 동안 부스터 게이지가 찹니다.</li>
         <li>게이지가 가득 차면 Space(BOOST)로 2초 동안 최고 속도가 약 30% 빨라집니다.</li>
         <li>? 상자를 지나면 순위에 따라 아이템을 하나 얻습니다. 아이템은 한 번에 하나만 가질 수 있습니다.</li>
@@ -249,6 +259,10 @@ function RaceView({ game }: { game: KartGameApi }) {
   useEffect(() => {
     renderer.reset();
   }, [hud.raceId, renderer]);
+
+  useEffect(() => {
+    renderer.setCameraMode(game.cameraMode);
+  }, [game.cameraMode, renderer]);
 
   // 게임 루프: requestAnimationFrame마다 고정 스텝으로 진행하고 그린다. 캔버스 크기는 CSS가 정하고 매 프레임 읽는다(화면 회전·크기 변경 대응).
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 import { readStoredNumber, readStoredString, writeStoredNumber, writeStoredString } from "@/lib/storage";
 import { KartAudio } from "./audio/KartAudio";
+import type { CameraMode } from "./camera";
 import { STORAGE_KEYS } from "./config";
 import { TurboKartController } from "./controller";
 import { KEY_TO_HOLD, KEY_TO_TAP } from "./input";
@@ -39,6 +40,8 @@ export function useTurboKart(rootRef: RefObject<HTMLElement | null>) {
   const [audio] = useState(() => new KartAudio(readStoredNumber(STORAGE_KEYS.sfx, 0) === 1, readStoredNumber(STORAGE_KEYS.music, 0) === 1));
   const [soundOn, setSoundOn] = useState(audio.sfxEnabled);
   const [musicOn, setMusicOn] = useState(audio.musicEnabled);
+  // 카메라: 기본은 회전(카트 전방이 화면 위). 고정 탑다운을 고를 수 있다.
+  const [cameraMode, setCameraMode] = useState<CameraMode>(() => (readStoredNumber(STORAGE_KEYS.camera, 1) === 0 ? "topdown" : "chase"));
   // 저장 데이터가 없거나 손상되어도 새 기록으로 정상 시작한다
   const [records, setRecords] = useState<Records>(() => parseRecords(readStoredString(STORAGE_KEYS.records)) ?? newRecords());
   const recordsRef = useRef(records);
@@ -104,6 +107,15 @@ export function useTurboKart(rootRef: RefObject<HTMLElement | null>) {
       } else audio.cueMusic(track);
     }
   }, [audio, controller, track]);
+
+  const toggleCamera = useCallback(() => {
+    setCameraMode((mode) => {
+      const next = mode === "chase" ? "topdown" : "chase";
+      writeStoredNumber(STORAGE_KEYS.camera, next === "chase" ? 1 : 0);
+      return next;
+    });
+    audio.click();
+  }, [audio]);
 
   const go = useCallback(
     (next: Screen) => {
@@ -232,6 +244,8 @@ export function useTurboKart(rootRef: RefObject<HTMLElement | null>) {
     musicOn,
     toggleSound,
     toggleMusic,
+    cameraMode,
+    toggleCamera,
     go,
     chooseTrack,
     setDifficulty,
