@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
-- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake는 Canvas 2D를 직접 사용한다.
+- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals는 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -29,6 +29,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run test:winter-blocks` | Winter Blocks 자동화 테스트 (규칙·혹·난이도·방해 요소·BGM 재생기) |
 | `npm run test:seo` | SEO 데이터 테스트 (sitemap 항목·title/description/canonical 고유성·썸네일 존재·alias 충돌) |
 | `npm run test:seo:build` | 빌드 결과물 검증 (`npm run build` 후 실행: sitemap.xml·robots.txt·프리렌더 HTML의 canonical·robots·홈 링크) |
+| `npm run test:cannon-rivals` | Cannon Rivals 자동화 테스트 (물리·지형·규칙·AI 명중률 시뮬레이션·코인 저장·BGM). `CANNON_SIM=full`이면 300회 측정 + 자동 대전 전투 길이 |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -85,6 +86,12 @@ src/
       logic/                 # 순수 TS: pieces(7종·회전·벽 밀기 표), game(상태 전이·혹·얼음·바람·눈·점수), game.test.ts
       controller.ts, input.ts, useWinterBlocks.ts, WinterBlocksGame.tsx, renderer.ts(캔버스·배경 눈)
       audio/                 # instruments(오르골·첼레스타·종·썰매 방울·패드·피치카토 합성), songs(BGM 3곡), sequencer, sfx, cues, WinterAudio
+    cannon-rivals/           # Canvas 2D 턴제 포격 대전 (Phaser 미사용, 아래 "Cannon Rivals" 참고)
+      config.ts              # 물리·피해·아이템·에너지·코인·전장 3종·AI 난이도 등 모든 밸런스 값
+      logic/                 # 순수 TS: physics(고정 스텝 탄도), terrain(높이맵·구덩이·검증), game(턴·착탄·낙하·아이템), ai(탄도 탐색·오차),
+                             #   rng, simulate·testUtils(테스트 전용), *.test.ts
+      profile.ts             # 코인·전적·상점 구매 저장 형식과 검증(보상 중복 방지)
+      controller.ts, useCannonRivals.ts, CannonRivalsGame.tsx, renderer.ts, audio/(cues·sfx·music 3곡·CannonAudio)
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
@@ -175,6 +182,18 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 개발 서버에서만 `window.__WINTER_BLOCKS__`(컨트롤러·오디오)가 노출된다.
 - 저작권: 장르 규칙만 참고했다. 다른 블록 퍼즐 게임의 이름·로고·그래픽·음악을 쓰지 않고, 게임 설명에서도 상표명을 쓰지 않는다.
 
+### Cannon Rivals (Canvas 2D)
+- 규칙은 `logic/`에만 둔다. 플레이어 발사·AI 탐색·탄도 가이드가 모두 `logic/physics.ts`의 `stepBody`(1/240초 단계 충돌 검사)를 쓰므로
+  물리를 바꿀 때 한 곳만 고친다. 지형은 높이맵(`terrain[x]` = 지면 y, `WORLD_H` = 낭떠러지)이며 렌더러가 같은 배열을 그린다.
+- 난수는 `GameState.rng`(시드)만 쓴다. `Math.random()`은 renderer의 파편·연기 같은 연출과 시드 생성에만 쓴다.
+- AI는 현재 상태(위치·바람·지형·상자)만 읽고 미래 정보를 쓰지 않는다. 결정당 시뮬레이션 수는 `AI_SIM_BUDGET` 이하.
+  난이도 값(`DIFFICULTY`)을 바꾸면 `npm run test:cannon-rivals`의 첫 발 명중률 목표(쉬움 15~25%, 보통 30~45%, 어려움 50~65%)를 다시 확인한다.
+- 아이템은 한 턴에 하나, FIRE 때 소모한다. 보상은 `profile.ts`의 `rewardBattle`이 전투 번호당 한 번만 지급한다. 저장 형식을 바꾸면 `PROFILE_VERSION`을 올린다.
+- 저장: `my-game-hub:cannon-rivals:profile`(코인·전적·구매 목록), `:sound`, `:music`. 효과음·BGM 기본 꺼짐.
+- 개발 서버에서만 `window.__CANNON_RIVALS__`(컨트롤러·오디오)가 노출된다.
+- 저작권: 포격 대전 장르 규칙만 참고했다. 탱크·전장 그래픽(`renderer.ts`)·BGM 3곡·효과음은 모두 자체 제작이며 외부 에셋이 없다.
+  다른 포격 게임의 이름·캐릭터·UI를 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다.
+
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
 - 게임 페이지 광고 위치는 `GamePageLayout`이 정한다(본문 아래 banner, 데스크톱 sidebar). 게임 화면 바로 위·아래에는 광고를 두지 않고,
@@ -203,7 +222,7 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ### 정책 페이지 / 운영자 정보
 - 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.
 - 코드로 값을 넣을 수 없는 확인 사항(로그 보존 기간, 배포 리전 등)은 `<TodoMark label="..."/>`와 `{/* TODO: ... */}` 주석으로 표시한다. `grep -rn "TODO" src`로 전체 목록을 볼 수 있다.
-- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정, Lost Relic 진행 저장·최단 기록). 쿠키·광고·Google Analytics는 없음.
+- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정, Lost Relic 진행 저장·최단 기록, Cannon Rivals 게임 내 코인·전적·구매 아이템). 쿠키·광고·Google Analytics는 없음.
 - AdSense나 분석 도구를 연결하는 변경에는 반드시 개인정보처리방침 개정(쿠키, 맞춤 광고 해제 방법, 위탁·국외 이전 표)을 포함한다. 방침 파일 상단 주석의 체크리스트를 따른다.
 - 연락처 이메일을 코드에 하드코딩하지 않는다(`operatorConfig.email` 사용).
 

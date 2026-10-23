@@ -10,6 +10,7 @@ const LOADING_SHAPES = {
   tall: "aspect-[3/4] max-w-[30rem]",
   video: "aspect-video max-w-[64rem]",
   board: "aspect-[3/4] max-w-[40rem]",
+  battle: "aspect-video max-w-5xl",
 } as const;
 
 function GameLoading({ shape = "square" }: { shape?: keyof typeof LOADING_SHAPES }) {
@@ -50,6 +51,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
   "winter-blocks": dynamic(() => import("./winter-blocks"), {
     ssr: false,
     loading: () => <GameLoading shape="board" />,
+  }),
+  // Cannon Rivals도 Canvas 2D만 쓴다(Phaser 미사용).
+  "cannon-rivals": dynamic(() => import("./cannon-rivals"), {
+    ssr: false,
+    loading: () => <GameLoading shape="battle" />,
   }),
 };
 

@@ -218,6 +218,20 @@ function GameDetails({ game }: { game: GameMeta }) {
         </ul>
       </DetailSection>
 
+      {game.sections?.map((section) => (
+        <DetailSection key={section.id} id={section.id} title={section.title}>
+          {section.intro && <p className="text-zinc-700 dark:text-zinc-300">{section.intro}</p>}
+          <dl className="grid gap-3 text-zinc-700 sm:grid-cols-2 dark:text-zinc-300">
+            {section.items.map((item) => (
+              <div key={item.name} className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+                <dt className="font-medium text-foreground">{item.name}</dt>
+                <dd className="mt-1 text-sm leading-6">{item.body}</dd>
+              </div>
+            ))}
+          </dl>
+        </DetailSection>
+      ))}
+
       {game.tips && game.tips.length > 0 && (
         <DetailSection id="tips" title="공략 팁">
           <ul className="list-disc space-y-1 pl-6 text-zinc-700 dark:text-zinc-300">

@@ -27,7 +27,9 @@ export const metadata: Metadata = {
  *       Gold Escape (my-game-hub:gold-escape:sound, my-game-hub:gold-escape:music),
  *       Star Vanguard (my-game-hub:star-vanguard:sound, my-game-hub:star-vanguard:music),
  *       Lost Relic (my-game-hub:lost-relic:sound, my-game-hub:lost-relic:music),
- *       Winter Blocks (my-game-hub:winter-blocks:high-score, :sound, :music, :track — 선택한 배경음악 번호)
+ *       Winter Blocks (my-game-hub:winter-blocks:high-score, :sound, :music, :track — 선택한 배경음악 번호),
+ *       Cannon Rivals (my-game-hub:cannon-rivals:profile — 게임 내 코인·승패 기록·최단 승리 턴·상점에서 산 아이템·마지막 보상 전투 번호,
+ *       my-game-hub:cannon-rivals:sound, :music)
  *   - 방문 통계: Vercel Web Analytics (쿠키 없음, src/app/layout.tsx의 <Analytics />)
  *   - 쿠키·광고·Google Analytics: 사용하지 않음 (Google AdSense는 도입 예정 — 본문 3번에 "도입 예정"으로 구분 표기)
  *   - 외부 API 호출: 없음. 글꼴(next/font)은 빌드 시 내려받아 이 사이트에서 제공한다. 문의 입력 양식 없음(이메일만).
@@ -122,6 +124,10 @@ export default function PrivacyPage() {
           점수와 최단 클리어 시간(숫자), 효과음·배경음악 켜기/끄기 설정
         </li>
         <li>Winter Blocks: 최고 점수(숫자), 효과음·배경음악 켜기/끄기 설정, 선택한 배경음악 곡</li>
+        <li>
+          Cannon Rivals: 게임 안에서만 쓰는 코인 수, 승리·패배 횟수와 최단 승리 턴 수, 상점에서 산 아이템 목록, 보상 중복 지급을
+          막기 위한 마지막 전투 번호, 효과음·배경음악 켜기/끄기 설정 (코인은 실제 결제나 광고와 연결되지 않습니다)
+        </li>
       </ul>
       <p>
         브라우저 설정에서 이 사이트의 데이터를 삭제하면 저장된 기록도 함께 삭제됩니다. 시크릿(비공개)

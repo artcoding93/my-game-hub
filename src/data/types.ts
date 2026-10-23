@@ -4,7 +4,7 @@
  * 데이터(`games.ts`)와 컴포넌트 레지스트리(`src/games/registry.tsx`)에서
  * 누락된 항목이 타입 에러로 드러난다.
  */
-export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard", "lost-relic", "winter-blocks"] as const;
+export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard", "lost-relic", "winter-blocks", "cannon-rivals"] as const;
 
 export type GameSlug = (typeof GAME_SLUGS)[number];
 
@@ -55,6 +55,11 @@ export interface GameMeta {
   };
   /** 게임 페이지 "공략 팁" 목록 (선택) */
   tips?: string[];
+  /**
+   * 게임별 추가 설명 섹션 (선택). 예: 전장 소개, 아이템 설명, AI 난이도.
+   * 게임 규칙 뒤·공략 팁 앞에 제목(h2)과 항목(이름 + 설명) 목록으로 HTML 텍스트로 나온다.
+   */
+  sections?: { id: string; title: string; intro?: string; items: { name: string; body: string }[] }[];
   category: GameCategory;
   status: GameStatus;
   /** `public/` 기준 경로. 예: `/games/snake-classic/thumbnail.svg` */

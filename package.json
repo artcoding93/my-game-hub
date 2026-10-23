@@ -10,6 +10,7 @@
     "test:lost-relic": "node --import ./scripts/ts-test-hooks.mjs --test src/games/lost-relic/logic/*.test.ts src/games/lost-relic/audio/*.test.ts",
     "test:seo": "node --import ./scripts/ts-test-hooks.mjs --test src/lib/seo.test.ts",
     "test:seo:build": "node --test scripts/check-seo-build.mjs",
+    "test:cannon-rivals": "node --import ./scripts/ts-test-hooks.mjs --test src/games/cannon-rivals/*.test.ts src/games/cannon-rivals/logic/*.test.ts src/games/cannon-rivals/audio/*.test.ts",
     "test:winter-blocks": "node --import ./scripts/ts-test-hooks.mjs --test src/games/winter-blocks/logic/*.test.ts src/games/winter-blocks/audio/*.test.ts"
   },
   "dependencies": {
