@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
     );
   },
   partialPrefetching: true,
+  experimental: {
+    // next dev·build의 업그레이드 알림 정책 (기본값과 같음: 보안 권고가 있을 때만 업그레이드를 권장)
+    agentUpgrade: "security",
+  },
   turbopack: {
     rules: {
       "*.css": {
