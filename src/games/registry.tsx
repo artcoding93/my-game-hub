@@ -11,6 +11,7 @@ const LOADING_SHAPES = {
   video: "aspect-video max-w-[64rem]",
   board: "aspect-[3/4] max-w-[40rem]",
   battle: "aspect-video max-w-5xl",
+  race: "aspect-[4/5] sm:aspect-video max-w-5xl",
 } as const;
 
 function GameLoading({ shape = "square" }: { shape?: keyof typeof LOADING_SHAPES }) {
@@ -56,6 +57,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
   "cannon-rivals": dynamic(() => import("./cannon-rivals"), {
     ssr: false,
     loading: () => <GameLoading shape="battle" />,
+  }),
+  // Turbo Kart도 Canvas 2D만 쓴다(Phaser 미사용).
+  "turbo-kart": dynamic(() => import("./turbo-kart"), {
+    ssr: false,
+    loading: () => <GameLoading shape="race" />,
   }),
 };
 
