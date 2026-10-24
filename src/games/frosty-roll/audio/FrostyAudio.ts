@@ -1,3 +1,4 @@
+import { closeAudioContext, resumeAudioContext } from "@/lib/audio/unlock";
 import { LoopPlayer } from "@/lib/audio/loopPlayer";
 import { createAudioContext, makeNoiseBuffer, VoiceTracker } from "@/lib/audio/synth";
 import type { GameEvent, GameState } from "../types";
@@ -102,7 +103,7 @@ export class FrostyAudio {
       this.parade.attach(this.ctx, SFX_VOLUME * MUSIC_RATIO);
       this.showdown.attach(this.ctx, SFX_VOLUME * MUSIC_RATIO);
     }
-    if (this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
+    resumeAudioContext(this.ctx);
   }
 
   setSfxEnabled(enabled: boolean) {
@@ -181,7 +182,7 @@ export class FrostyAudio {
     this.showdown.dispose();
     if (this.ctx) this.voices.stopAll(this.ctx.currentTime);
     this.sfxBus?.disconnect();
-    void this.ctx?.close().catch(() => {});
+    if (this.ctx) closeAudioContext(this.ctx);
     this.ctx = null;
     this.sfxBus = null;
     this.noise = null;

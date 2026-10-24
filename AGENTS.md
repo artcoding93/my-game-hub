@@ -26,6 +26,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run dev` | 개발 서버 (AdSlot 자리 표시 박스가 보임) |
 | `npm run build` | 프로덕션 빌드 + 타입 검사 |
 | `npm run lint` | ESLint |
+| `npm run test:snake-classic` | Snake Classic 방향 입력 테스트 (반대 방향 금지·빠른 연속 입력·예약 상한·재시작/일시정지 초기화) |
+| `npm run test:audio` | 공용 오디오 깨우기 테스트 (사용자 입력 시 resume·무음 버퍼, 막힘 감지, 의도적 정지, Audio Session) |
 | `npm run test:winter-blocks` | Winter Blocks 자동화 테스트 (규칙·혹·난이도·방해 요소·BGM 재생기) |
 | `npm run test:seo` | SEO 데이터 테스트 (sitemap 항목·title/description/canonical 고유성·썸네일 존재·alias 충돌) |
 | `npm run test:seo:build` | 빌드 결과물 검증 (`npm run build` 후 실행: sitemap.xml·robots.txt·프리렌더 HTML의 canonical·robots·홈 링크) |
@@ -109,7 +111,8 @@ src/
       audio/                 # sfx(효과음), music(BGM 2곡), FrostyAudio(이벤트→효과음)
       controller.ts, input.ts, useFrostyRoll.ts, FrostyRollGame.tsx
   lib/
-    audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
+    audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker·createAudioContext), loopPlayer(look-ahead BGM 재생기),
+                             #   unlock(모든 게임 AudioContext 등록·사용자 입력/탭 복귀 때 resume·막힘 감지, iOS 대응)
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
     seo.ts                   # 색인 대상 게임·게임 title/description/canonical·sitemap 항목·홈 description (seo.test.ts)
     site.ts                  # siteConfig, operatorConfig(운영자·정책 정보), navLinks/policyLinks, adsConfig
@@ -233,6 +236,21 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 저장: `my-game-hub:frosty-roll:high-score`, `:checkpoint`, `:sound`, `:music`, `:shake`, `:easy-push`. 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__FROSTY_ROLL__` 노출.
 - 저작권: 1990년대 오락실 눈덩이 플랫폼 장르의 일반 규칙만 참고했다. 북극여우·적·보스·배경 그림(`render/`), 스테이지 배치, BGM 2곡과 효과음은 모두 자체 제작이며 외부 에셋이 없다.
   다른 게임의 이름·캐릭터·스테이지·음악을 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다. "Frosty Roll"은 가칭이므로 정식 공개 전 상표 중복을 확인한다.
+
+### 사운드 공통 (iOS Safari 대응)
+- 모든 게임은 Web Audio API만 쓴다(HTMLAudioElement 없음). AudioContext는 반드시 `lib/audio/synth.ts`의 `createAudioContext()`로 만든다
+  (무음 1샘플 재생 + `lib/audio/unlock.ts` 자동 등록). 재생 재개는 `resumeAudioContext`, 일부러 멈출 때(효과음·BGM 모두 끔)는 `suspendAudioContext`,
+  화면을 떠날 때는 `closeAudioContext`를 쓴다. `ctx.resume()`·`suspend()`·`close()`를 직접 부르지 않는다(거부된 Promise·막힘 감지 누락).
+- iOS·HTML 표준은 터치의 `pointerdown`·`touchstart`를 사용자 활성화로 인정하지 않는다(`touchend`·`pointerup`·`click`·`keydown`만 인정).
+  unlock.ts가 이 입력들을 캡처 단계에서 받아 멈춘 컨텍스트를 깨우므로, 게임 코드에서 pointerdown으로 unlock()해도 손을 떼는 순간 소리가 풀린다.
+- 탭 복귀(`visibilitychange`)·bfcache 복원(`pageshow`) 때 resume을 시도하고, 그래도 막혀 있으면 `components/AudioResumeButton`(레지스트리 GameLoader에 포함)이
+  "소리 다시 켜기" 버튼을 보여 준다. 소리를 켠 경우에만 `navigator.audioSession.type = "playback"`(Safari 16.4+, 없으면 무시)으로 지정한다.
+- 효과음·BGM 기본 꺼짐과 게임별 저장 키는 그대로 유지한다. 사운드가 없는 게임에 BGM을 새로 넣지 않는다.
+
+### Snake Classic 조작
+- 모바일은 화면 아래 십자 방향 버튼(`SnakeGame.tsx`의 DirectionPad, 터치 기기에서만 표시, 56px, pointerdown 즉시 반응)으로 방향을 바꾼다. 스와이프는 쓰지 않는다.
+  보드 터치는 시작·재개·재시작만 한다(플레이 중 일시정지는 Pause 버튼). 키보드(방향키·WASD)와 버튼이 같은 `turn` 액션을 쓰고,
+  180도 반전 방지·연속 입력 예약은 `logic.ts`의 `queueTurn`이 맡는다. 레이아웃을 바꾸면 iPhone SE(375×667)에서도 보드~방향 버튼이 한 화면에 들어오는지 확인한다.
 
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.

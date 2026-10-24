@@ -1,3 +1,4 @@
+import { closeAudioContext, resumeAudioContext, suspendAudioContext } from "@/lib/audio/unlock";
 import { createAudioContext, makeNoiseBuffer } from "@/lib/audio/synth";
 import type { GameEvent } from "../types";
 import { cueForAction, cuesForEvents, type ControlAction, type SoundCue } from "./cues";
@@ -74,7 +75,7 @@ export class WinterAudio {
       this.musicNodes = [musicGain, compressor, delay, feedback, damp, wet];
       this.music.attach(ctx, musicGain);
     }
-    if (this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
+    resumeAudioContext(this.ctx);
   }
 
   setSfxEnabled(enabled: boolean) {
@@ -135,7 +136,7 @@ export class WinterAudio {
     this.sfxBus?.disconnect();
     for (const node of this.musicNodes) node.disconnect();
     this.musicNodes = [];
-    void this.ctx?.close().catch(() => {});
+    if (this.ctx) closeAudioContext(this.ctx);
     this.ctx = null;
     this.sfxBus = null;
     this.noise = null;
@@ -154,7 +155,7 @@ export class WinterAudio {
     if (this.suspendTimer) clearTimeout(this.suspendTimer);
     this.suspendTimer = setTimeout(() => {
       this.suspendTimer = null;
-      if (!this.sfxEnabled && !this.music.enabled && this.ctx?.state === "running") void this.ctx.suspend().catch(() => {});
+      if (!this.sfxEnabled && !this.music.enabled && this.ctx) suspendAudioContext(this.ctx);
     }, 900);
   }
 }

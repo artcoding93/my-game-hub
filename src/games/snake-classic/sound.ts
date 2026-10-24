@@ -1,3 +1,5 @@
+import { closeAudioContext, resumeAudioContext, suspendAudioContext } from "@/lib/audio/unlock";
+import { createAudioContext } from "@/lib/audio/synth";
 import { SnakeMusic } from "./music";
 import type { SnakeSoundEvent } from "./soundEvents";
 
@@ -72,22 +74,15 @@ export class SnakeSound {
   unlock() {
     if (!(this.enabled || this.music.enabled) || typeof window === "undefined") return;
     if (!this.ctx) {
-      const AudioCtor =
-        window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtor) return;
-      this.ctx = new AudioCtor();
+      // 공용 생성기: 무음 1샘플 재생(iOS) + 이후 입력·탭 복귀 때 자동으로 다시 깨우도록 등록 (lib/audio/unlock.ts)
+      this.ctx = createAudioContext();
+      if (!this.ctx) return;
       this.master = this.ctx.createGain();
       this.master.gain.value = MASTER_VOLUME;
       this.master.connect(this.ctx.destination);
-      // iOS Safari는 사용자 입력 안에서 실제로 소리를 한 번 재생해야 오디오가 풀린다(무음 1샘플).
-      const silent = this.ctx.createBufferSource();
-      silent.buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
-      silent.connect(this.ctx.destination);
-      silent.start();
-      silent.onended = () => silent.disconnect();
       this.music.attach(this.ctx, MASTER_VOLUME);
     }
-    if (this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
+    resumeAudioContext(this.ctx);
   }
 
   setEnabled(enabled: boolean) {
@@ -112,7 +107,7 @@ export class SnakeSound {
   private suspendIfSilent() {
     if (this.enabled || this.music.enabled) return;
     setTimeout(() => {
-      if (!this.enabled && !this.music.enabled && this.ctx?.state === "running") void this.ctx.suspend().catch(() => {});
+      if (!this.enabled && !this.music.enabled && this.ctx) suspendAudioContext(this.ctx);
     }, 350);
   }
 
@@ -126,7 +121,7 @@ export class SnakeSound {
     this.music.dispose();
     this.stopAll();
     this.master?.disconnect();
-    void this.ctx?.close().catch(() => {});
+    if (this.ctx) closeAudioContext(this.ctx);
     this.ctx = null;
     this.master = null;
     this.noiseBuffer = null;

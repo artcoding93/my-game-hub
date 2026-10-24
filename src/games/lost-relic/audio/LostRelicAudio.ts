@@ -1,3 +1,4 @@
+import { closeAudioContext, resumeAudioContext, suspendAudioContext } from "@/lib/audio/unlock";
 import { LoopPlayer } from "@/lib/audio/loopPlayer";
 import { createAudioContext, makeNoiseBuffer, VoiceTracker } from "@/lib/audio/synth";
 import type { ControlAction } from "../controller";
@@ -65,7 +66,7 @@ export class LostRelicAudio {
       this.sfxBus.connect(this.ctx.destination);
       for (const track of TRACKS) this.players[track].attach(this.ctx, SFX_VOLUME * MUSIC_RATIO);
     }
-    if (this.ctx.state !== "running") void this.ctx.resume().catch(() => {});
+    resumeAudioContext(this.ctx);
   }
 
   setSfxEnabled(enabled: boolean) {
@@ -141,7 +142,7 @@ export class LostRelicAudio {
     for (const track of TRACKS) this.players[track].dispose();
     if (this.ctx) this.voices.stopAll(this.ctx.currentTime);
     this.sfxBus?.disconnect();
-    void this.ctx?.close().catch(() => {});
+    if (this.ctx) closeAudioContext(this.ctx);
     this.ctx = null;
     this.sfxBus = null;
     this.noise = null;
@@ -162,7 +163,7 @@ export class LostRelicAudio {
     if (this.suspendTimer) clearTimeout(this.suspendTimer);
     this.suspendTimer = setTimeout(() => {
       this.suspendTimer = null;
-      if (!this.sfxEnabled && !this.musicOn && this.ctx?.state === "running") void this.ctx.suspend().catch(() => {});
+      if (!this.sfxEnabled && !this.musicOn && this.ctx) suspendAudioContext(this.ctx);
     }, 700);
   }
 }

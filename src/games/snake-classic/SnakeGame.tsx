@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { arcadeFont } from "@/lib/fonts";
 import { BOARD_PIXELS } from "./constants";
 import { drawBoard } from "./renderer";
-import type { SnakeState } from "./types";
+import type { Direction, SnakeState } from "./types";
 import { useSnakeGame } from "./useSnakeGame";
 
 function formatScore(value: number) {
@@ -17,7 +17,7 @@ function formatScore(value: number) {
  * 이 컴포넌트는 점수판·오버레이·버튼 UI만 그린다.
  */
 export default function SnakeGame() {
-  const { state, start, restart, togglePause, soundOn, toggleSound, musicOn, toggleMusic, touchHandlers } = useSnakeGame();
+  const { state, start, restart, togglePause, soundOn, toggleSound, musicOn, toggleMusic, turn, onBoardPointerUp } = useSnakeGame();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // 고해상도 화면에서 선명하게 보이도록 devicePixelRatio를 반영해 한 번만 크기를 맞춘다.
@@ -39,11 +39,11 @@ export default function SnakeGame() {
 
   return (
     <div
-      className={`${arcadeFont.className} mx-auto flex w-full max-w-[min(560px,max(320px,calc(100dvh_-_16rem)))] flex-col gap-3 rounded-2xl bg-black p-3 text-white shadow-[0_0_0_4px_#14532d,0_0_32px_rgba(34,197,94,0.25)] sm:p-4`}
+      className={`${arcadeFont.className} mx-auto flex w-full max-w-[min(560px,max(320px,calc(100dvh_-_16rem)))] flex-col gap-3 pointer-coarse:max-w-[min(560px,max(240px,calc(100dvh_-_25.8rem)))] pointer-coarse:gap-2 rounded-2xl bg-black p-3 pointer-coarse:p-2 text-white shadow-[0_0_0_4px_#14532d,0_0_32px_rgba(34,197,94,0.25)] sm:p-4`}
     >
       <Scoreboard score={state.score} highScore={state.highScore} length={state.snake.length} />
 
-      <div className="relative touch-none" {...touchHandlers}>
+      <div className="relative touch-none" onPointerUp={onBoardPointerUp}>
         <canvas
           ref={canvasRef}
           role="img"
@@ -68,6 +68,54 @@ export default function SnakeGame() {
         musicOn={musicOn}
         onToggleMusic={toggleMusic}
       />
+
+      <DirectionPad onTurn={turn} />
+    </div>
+  );
+}
+
+const PAD_BUTTONS: { direction: Direction; label: string; area: string; arrow: string }[] = [
+  { direction: "up", label: "위로", area: "col-start-2 row-start-1", arrow: "▲" },
+  { direction: "left", label: "왼쪽으로", area: "col-start-1 row-start-2", arrow: "◀" },
+  { direction: "right", label: "오른쪽으로", area: "col-start-3 row-start-2", arrow: "▶" },
+  { direction: "down", label: "아래로", area: "col-start-2 row-start-3", arrow: "▼" },
+];
+
+/**
+ * 모바일 방향 버튼 (터치 기기에서만 보인다). 누르는 순간(pointerdown) 방향을 바꾼다.
+ * 반대 방향·연속 입력 처리는 logic.ts의 queueTurn이 맡는다(마지막으로 예약된 방향 기준으로 180도 반전 금지, 최대 2개 예약).
+ * 스크롤·확대·텍스트 선택·길게 누르기 메뉴를 막고, iPhone 홈 표시줄 영역(safe-area)만큼 아래 여백을 둔다.
+ */
+function DirectionPad({ onTurn }: { onTurn: (direction: Direction) => void }) {
+  const [pressed, setPressed] = useState<Direction | null>(null);
+  const release = () => setPressed(null);
+  return (
+    <div
+      className="mx-auto hidden touch-none grid-cols-3 grid-rows-3 gap-1 pb-[env(safe-area-inset-bottom)] select-none [-webkit-touch-callout:none] pointer-coarse:grid"
+      role="group"
+      aria-label="방향 버튼"
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      {PAD_BUTTONS.map(({ direction, label, area, arrow }) => (
+        <button
+          key={direction}
+          type="button"
+          aria-label={label}
+          className={`${area} flex h-14 w-14 touch-none items-center justify-center rounded-xl border-2 font-sans text-2xl transition-colors ${
+            pressed === direction ? "border-green-300 bg-green-500 text-black" : "border-green-600 bg-zinc-900 text-green-400"
+          }`}
+          onPointerDown={(event: PointerEvent<HTMLButtonElement>) => {
+            event.preventDefault();
+            setPressed(direction);
+            onTurn(direction);
+          }}
+          onPointerUp={release}
+          onPointerCancel={release}
+          onPointerLeave={release}
+        >
+          {arrow}
+        </button>
+      ))}
     </div>
   );
 }
@@ -136,7 +184,7 @@ function StatusOverlay({ state }: { state: SnakeState }) {
 }
 
 const buttonClass =
-  "h-11 min-w-28 border-2 px-4 text-[10px] uppercase tracking-wider transition-colors active:translate-y-px sm:text-xs";
+  "h-11 min-w-28 pointer-coarse:min-w-24 border-2 px-4 text-[10px] uppercase tracking-wider transition-colors active:translate-y-px sm:text-xs";
 
 function Controls({
   status,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, useState, type TouchEvent } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, type PointerEvent } from "react";
 import { readStoredNumber, writeStoredNumber } from "@/lib/storage";
 import { HIGH_SCORE_STORAGE_KEY, MUSIC_STORAGE_KEY, SOUND_STORAGE_KEY, TICK_MS } from "./constants";
 import { createInitialState, snakeReducer } from "./logic";
@@ -17,9 +17,6 @@ const KEY_TO_DIRECTION: Record<string, Direction> = {
   KeyA: "left",
   KeyD: "right",
 };
-
-/** 이 거리(px) 미만의 터치 이동은 스와이프가 아니라 탭으로 본다. */
-const SWIPE_THRESHOLD = 24;
 
 // 이 컴포넌트는 ssr: false로만 로드되므로 초기화 시점에 window를 써도 안전하다.
 function initState() {
@@ -42,7 +39,6 @@ function isPageControlTarget(target: EventTarget | null) {
  */
 export function useSnakeGame() {
   const [state, dispatch] = useReducer(snakeReducer, undefined, initState);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [sound] = useState(() => {
     const engine = new SnakeSound(readStoredNumber(SOUND_STORAGE_KEY, 0) === 1, readStoredNumber(MUSIC_STORAGE_KEY, 0) === 1);
     // 현재 Snake는 속도가 일정하므로 BGM도 기본 템포(115 BPM)를 유지한다. 이동 간격이 바뀌면 이 값을 갱신하면 된다.
@@ -121,6 +117,20 @@ export function useSnakeGame() {
     writeStoredNumber(MUSIC_STORAGE_KEY, next ? 1 : 0);
   }, [sound]);
 
+  // 개발 서버에서만 브라우저 테스트·디버깅용으로 노출한다(프로덕션 빌드에서는 제거됨).
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    const debug = window as unknown as { __SNAKE__?: unknown };
+    debug.__SNAKE__ = { getState: () => stateRef.current, sound };
+    return () => {
+      delete debug.__SNAKE__;
+    };
+  }, [sound]);
+
   // 최고 점수 저장
   useEffect(() => {
     writeStoredNumber(HIGH_SCORE_STORAGE_KEY, state.highScore);
@@ -162,31 +172,14 @@ export function useSnakeGame() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // 터치: 스와이프로 방향 전환, 탭으로 primaryAction
-  const onTouchStart = useCallback((event: TouchEvent) => {
-    const touch = event.touches[0];
-    touchStart.current = { x: touch.clientX, y: touch.clientY };
-  }, []);
-
-  const onTouchEnd = useCallback(
-    (event: TouchEvent) => {
-      const startPoint = touchStart.current;
-      touchStart.current = null;
-      if (!startPoint) return;
-
-      const touch = event.changedTouches[0];
-      const dx = touch.clientX - startPoint.x;
-      const dy = touch.clientY - startPoint.y;
-
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_THRESHOLD) {
-        primaryAction(state.status);
-      } else if (Math.abs(dx) > Math.abs(dy)) {
-        turn(dx > 0 ? "right" : "left");
-      } else {
-        turn(dy > 0 ? "down" : "up");
-      }
+  // 모바일 방향 전환은 화면 아래 방향 버튼(SnakeGame의 DirectionPad)이 맡는다. 보드 터치는 시작·재시작·재개만 한다
+  // (플레이 중 보드를 실수로 눌러 일시정지되지 않도록). 마우스 클릭은 기존처럼 무시한다.
+  const onBoardPointerUp = useCallback(
+    (event: PointerEvent) => {
+      if (event.pointerType === "mouse" || state.status === "playing") return;
+      primaryAction(state.status);
     },
-    [primaryAction, state.status, turn],
+    [primaryAction, state.status],
   );
 
   return {
@@ -198,6 +191,7 @@ export function useSnakeGame() {
     toggleSound,
     musicOn,
     toggleMusic,
-    touchHandlers: { onTouchStart, onTouchEnd },
+    turn,
+    onBoardPointerUp,
   };
 }

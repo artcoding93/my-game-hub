@@ -1,3 +1,5 @@
+import { closeAudioContext, resumeAudioContext, suspendAudioContext } from "@/lib/audio/unlock";
+import { createAudioContext } from "@/lib/audio/synth";
 import { StarVanguardMusic, type MusicAction } from "./music";
 import type { GameEvent, GameState } from "./types";
 
@@ -31,17 +33,16 @@ export class SoundEngine {
   unlock() {
     if ((!this.enabled && !this.music.enabled) || typeof window === "undefined") return;
     if (!this.ctx) {
-      const AudioCtor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtor) return;
-      this.ctx = new AudioCtor();
+      // 공용 생성기: 무음 1샘플 재생(iOS) + 이후 입력·탭 복귀 때 자동으로 다시 깨우도록 등록 (lib/audio/unlock.ts)
+      this.ctx = createAudioContext();
+      if (!this.ctx) return;
       this.master = this.ctx.createGain();
       this.master.gain.value = SFX_VOLUME;
       this.master.connect(this.ctx.destination);
       this.music.attach(this.ctx, SFX_VOLUME * MUSIC_RATIO);
     }
-    // iOS Safari는 전화·백그라운드 전환 뒤 "interrupted" 상태로 남을 수 있으므로 suspended 외에도 다시 깨운다.
-    const state = this.ctx.state as string;
-    if (state !== "running" && state !== "closed") void this.ctx.resume();
+    // iOS Safari는 전화·백그라운드 전환 뒤 "interrupted" 상태로 남을 수 있으므로 suspended 외에도 다시 깨운다(실패는 조용히 무시).
+    resumeAudioContext(this.ctx);
   }
 
   setEnabled(enabled: boolean) {
@@ -68,14 +69,14 @@ export class SoundEngine {
     if (this.suspendTimer) clearTimeout(this.suspendTimer);
     this.suspendTimer = setTimeout(() => {
       this.suspendTimer = null;
-      if (!this.enabled && !this.music.enabled && this.ctx?.state === "running") void this.ctx.suspend();
+      if (!this.enabled && !this.music.enabled && this.ctx) suspendAudioContext(this.ctx);
     }, 350);
   }
 
   dispose() {
     if (this.suspendTimer) clearTimeout(this.suspendTimer);
     this.music.dispose();
-    void this.ctx?.close();
+    if (this.ctx) closeAudioContext(this.ctx);
     this.ctx = null;
     this.master = null;
     this.noiseBuffer = null;

@@ -7,6 +7,8 @@
  * - 누수 방지: 예약한 소리는 VoiceTracker에 기록하고, 끝나거나 멈추면 연결을 끊는다.
  */
 
+import { trackAudioContext } from "./unlock";
+
 const SEMITONE: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 /** "A4", "G#5" 같은 음 이름을 주파수(Hz)로 바꾼다. */
@@ -32,6 +34,8 @@ export function createAudioContext(): AudioContext | null {
   silent.connect(ctx.destination);
   silent.onended = () => silent.disconnect();
   silent.start();
+  // iOS: 이후 사용자 입력·탭 복귀 때 자동으로 다시 깨우도록 등록한다 (unlock.ts)
+  trackAudioContext(ctx);
   return ctx;
 }
 

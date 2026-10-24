@@ -1,3 +1,4 @@
+import { closeAudioContext, resumeAudioContext } from "@/lib/audio/unlock";
 import { createAudioContext, makeNoiseBuffer, VoiceTracker } from "@/lib/audio/synth";
 import type { Kart, RaceEvent, TrackId } from "../types";
 import { cuesForEvents, type CueEntry, type SoundCue } from "./cues";
@@ -45,8 +46,7 @@ export class KartAudio {
       this.bus.connect(ctx.destination);
       this.music.attach(ctx, SFX_VOLUME * MUSIC_RATIO);
     }
-    const state = this.ctx.state as string;
-    if (state !== "running" && state !== "closed") void this.ctx.resume().catch(() => {});
+    resumeAudioContext(this.ctx);
   }
 
   setSfxEnabled(enabled: boolean) {
@@ -198,7 +198,7 @@ export class KartAudio {
     this.music.dispose();
     if (this.ctx) this.voices.stopAll(this.ctx.currentTime);
     this.bus?.disconnect();
-    void this.ctx?.close().catch(() => {});
+    if (this.ctx) closeAudioContext(this.ctx);
     this.ctx = null;
     this.bus = null;
     this.noise = null;

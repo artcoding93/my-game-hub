@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
+import { AudioResumeButton } from "@/components/AudioResumeButton";
 import type { GameSlug } from "@/data/types";
 
 const LOADING_SHAPES = {
@@ -72,5 +73,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
 
 export function GameLoader({ slug }: { slug: GameSlug }) {
   const Game = gameComponents[slug];
-  return <Game />;
+  return (
+    <>
+      <Game />
+      {/* 자동재생이 막혔을 때만 보이는 "소리 다시 켜기" 버튼 (모든 게임 공통, lib/audio/unlock.ts) */}
+      <AudioResumeButton />
+    </>
+  );
 }
