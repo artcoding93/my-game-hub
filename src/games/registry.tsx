@@ -12,6 +12,7 @@ const LOADING_SHAPES = {
   board: "aspect-[3/4] max-w-[40rem]",
   battle: "aspect-video max-w-5xl",
   race: "aspect-[4/5] sm:aspect-video max-w-5xl",
+  cinematic: "aspect-video max-w-5xl",
 } as const;
 
 function GameLoading({ shape = "square" }: { shape?: keyof typeof LOADING_SHAPES }) {
@@ -62,6 +63,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
   "turbo-kart": dynamic(() => import("./turbo-kart"), {
     ssr: false,
     loading: () => <GameLoading shape="race" />,
+  }),
+  // Shadow of the Citadel(프로토타입)도 Canvas 2D만 쓴다(Phaser 미사용).
+  "shadow-of-the-citadel": dynamic(() => import("./shadow-of-the-citadel"), {
+    ssr: false,
+    loading: () => <GameLoading shape="cinematic" />,
   }),
 };
 

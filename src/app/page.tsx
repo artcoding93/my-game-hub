@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdSlot } from "@/components/AdSlot";
 import { GameCard } from "@/components/GameCard";
-import { getAllGames } from "@/lib/games";
+import { getListedGames } from "@/lib/games";
 import { getHomeDescription } from "@/lib/seo";
 import { absoluteUrl, INDEXABLE, siteConfig, socialMetadata } from "@/lib/site";
 
@@ -54,7 +54,7 @@ const FEATURES = [
 ] as const;
 
 export default function Home() {
-  const games = getAllGames();
+  const games = getListedGames();
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 py-8 lg:py-12">

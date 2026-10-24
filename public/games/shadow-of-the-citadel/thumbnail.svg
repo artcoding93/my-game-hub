@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" shape-rendering="crispEdges">
+  <defs>
+    <radialGradient id="torch" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffb35a" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffb35a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c0910"/>
+      <stop offset="1" stop-color="#2a1c17"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="180" fill="url(#bg)"/>
+  <g fill="#1a1219">
+    <path d="M0 40h24v140H0zM70 40h24v140H70zM140 40h24v140h-24zM210 40h24v140h-24zM280 40h24v140h-24z"/>
+  </g>
+  <g fill="#0b080d">
+    <path d="M24 180V70a23 23 0 0 1 46 0v110zM94 180V70a23 23 0 0 1 46 0v110zM164 180V70a23 23 0 0 1 46 0v110zM234 180V70a23 23 0 0 1 46 0v110z"/>
+  </g>
+  <circle cx="118" cy="92" r="44" fill="url(#torch)"/>
+  <rect x="115" y="94" width="6" height="12" fill="#3a2a22"/>
+  <path d="M114 94h8l-2-8-2 3-2-6z" fill="#ffb347"/>
+  <path d="M116 93h4l-1-4z" fill="#fff2b8"/>
+  <!-- 발판 -->
+  <path d="M0 150h120v30H0z" fill="#5a4434"/>
+  <path d="M0 150h120v4H0z" fill="#9a7a5a"/>
+  <path d="M190 110h130v70H190z" fill="#5a4434"/>
+  <path d="M190 110h130v4H190z" fill="#9a7a5a"/>
+  <path d="M190 110h3v70h-3z" fill="#3a2b21"/>
+  <g fill="#3a2b21">
+    <path d="M0 165h120v2H0zM40 150h2v15h-2zM90 167h2v13h-2zM190 140h130v2H190zM230 114h2v26h-2zM280 142h2v38h-2z"/>
+  </g>
+  <!-- 난간에 매달린 탐험가 -->
+  <g shape-rendering="geometricPrecision" stroke="#120b09" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M186 122l-10 22-7 4" fill="none" stroke="#143a39" stroke-width="6"/>
+    <path d="M191 112l-4 14M188 112l-5 14" fill="none" stroke="#c9956a" stroke-width="3.2"/>
+    <path d="M181 127c-4 6-5 14-4 22l8 1c2-8 3-15 1-22z" fill="#1e5b57"/>
+    <path d="M178 148l-3 16-1 10M184 149l1 15-2 9" fill="none" stroke="#3b3747" stroke-width="5"/>
+    <path d="M172 172l5 2 2-3M181 172l5 2 2-3" fill="#5c3b23" stroke-width="1.2"/>
+    <path d="M176 148h11" stroke="#70482a" stroke-width="2.6"/>
+    <ellipse cx="185" cy="120" rx="5" ry="6" fill="#c9956a"/>
+    <path d="M180 118c0-6 9-8 10-2-3-1-6 0-7 3z" fill="#241712" stroke-width="1"/>
+  </g>
+  <text x="12" y="26" fill="#e9c98f" font-family="Georgia, serif" font-size="17" letter-spacing="1">SHADOW OF THE CITADEL</text>
+  <text x="12" y="40" fill="#b9946a" font-family="Georgia, serif" font-size="9" letter-spacing="2">MOVEMENT PROTOTYPE</text>
+</svg>

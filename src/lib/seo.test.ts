@@ -6,6 +6,7 @@ import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { games } from "@/data/games";
 import { GAME_SLUGS } from "@/data/types";
+import { getListedGames, isPlayable } from "@/lib/games";
 import { getGameListLastModified, getGameSeo, getHomeDescription, getIndexableGames, getSitemapEntries, PUBLIC_PAGES } from "@/lib/seo";
 import { SITE_URL } from "@/lib/site";
 
@@ -111,5 +112,26 @@ describe("sitemap.xml", () => {
     const home = entries.find((e) => e.url === SITE_URL);
     assert.equal(home?.lastModified, getGameListLastModified());
     for (const e of entries) if (e.lastModified) assert.match(e.lastModified, ISO_DATE, e.url);
+  });
+});
+
+describe("prototype 게임 (개발 중 비공개)", () => {
+  const prototype = { ...games[0], status: "prototype" as const };
+
+  test("목록·sitemap·색인 대상에 prototype 게임이 없다", () => {
+    const urls = getSitemapEntries().map((e) => e.url);
+    for (const g of games.filter((g) => g.status === "prototype")) {
+      assert.ok(!getListedGames().includes(g), g.slug);
+      assert.ok(!getIndexableGames().includes(g), g.slug);
+      assert.ok(!urls.includes(`${SITE_URL}/games/${g.slug}`), g.slug);
+    }
+  });
+
+  test("prototype 페이지는 Vercel Production에서만 막힌다 (로컬·Preview에서는 열림)", () => {
+    assert.equal(isPlayable(prototype, "production"), false);
+    assert.equal(isPlayable(prototype, "preview"), true);
+    assert.equal(isPlayable(prototype, undefined), true);
+    assert.equal(isPlayable({ ...prototype, status: "available" }, "production"), true);
+    assert.equal(isPlayable({ ...prototype, status: "coming-soon" }, "preview"), false);
   });
 });

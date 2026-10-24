@@ -6,13 +6,14 @@ import { GameCard } from "@/components/GameCard";
 import { GamePageLayout } from "@/components/GamePageLayout";
 import type { GameControl, GameMeta } from "@/data/types";
 import { GameLoader } from "@/games/registry";
-import { CATEGORY_LABELS, getGameBySlug } from "@/lib/games";
+import { CATEGORY_LABELS, getGameBySlug, isPlayable } from "@/lib/games";
 import { getGameLastModified, getGameSeo, getIndexableGames } from "@/lib/seo";
 import { absoluteUrl, INDEXABLE, siteConfig, socialMetadata } from "@/lib/site";
 
 // Cache Components 환경에서는 `dynamicParams = false`를 쓸 수 없으므로,
 // 목록에 없는 slug는 페이지에서 notFound()로 처리한다.
 // 새 게임은 src/data/games.ts에 available로 추가하면 여기와 sitemap(src/lib/seo.ts)에 함께 반영된다.
+// prototype 게임은 미리 렌더링하지 않는다(요청 시 렌더링, Vercel Production에서는 404).
 export function generateStaticParams() {
   return getIndexableGames().map((game) => ({ slug: game.slug }));
 }
@@ -20,7 +21,7 @@ export function generateStaticParams() {
 async function getGameOrNotFound(params: Promise<{ slug: string }>): Promise<GameMeta> {
   const { slug } = await params;
   const game = getGameBySlug(slug);
-  if (!game || game.status !== "available") notFound();
+  if (!game || !isPlayable(game)) notFound();
   return game;
 }
 
@@ -28,7 +29,9 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
   const { slug } = await params;
   const game = getGameBySlug(slug);
   // 준비 중인 게임은 페이지가 404이므로 색인용 메타데이터를 만들지 않는다.
-  if (!game || game.status !== "available") return {};
+  if (!game || !isPlayable(game)) return {};
+  // prototype(로컬·Preview 전용): 색인·canonical·OG 없이 제목만 둔다.
+  if (game.status !== "available") return { title: game.title, robots: { index: false, follow: false } };
 
   const { title, fullTitle, description, path } = getGameSeo(game);
 
@@ -96,7 +99,7 @@ async function GameContent({ params }: Pick<PageProps<"/games/[slug]">, "params"
 
   return (
     <>
-      <GameJsonLd game={game} />
+      {game.status === "available" && <GameJsonLd game={game} />}
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <nav aria-label="breadcrumb" className="text-sm text-zinc-500">

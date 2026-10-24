@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
-- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart는 Canvas 2D를 직접 사용한다.
+- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart·Shadow of the Citadel(프로토타입)은 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -31,6 +31,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run test:seo:build` | 빌드 결과물 검증 (`npm run build` 후 실행: sitemap.xml·robots.txt·프리렌더 HTML의 canonical·robots·홈 링크) |
 | `npm run test:cannon-rivals` | Cannon Rivals 자동화 테스트 (물리·지형·규칙·AI 명중률 시뮬레이션·코인 저장·BGM). `CANNON_SIM=full`이면 300회 측정 + 자동 대전 전투 길이 |
 | `npm run test:turbo-kart` | Turbo Kart 자동화 테스트 (차량 물리·트랙 검증·랩/순위·아이템·기록·BGM, AI 4대 완주 시뮬레이션 9개 조합). `TURBO_SIM=full`이면 조합마다 5회 |
+| `npm run test:shadow-of-the-citadel` | Shadow of the Citadel 자동화 테스트 (물리·점프 거리·난간 잡기/올라오기/손 놓기·착지 강도·관통·고정 스텝, 발 미끄러짐·올라오기 관통·손 고정·자세 튐) |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -101,6 +102,12 @@ src/
       records.ts             # 기록 저장 형식·검증
       camera.ts              # 회전(chase)·고정(topdown) 카메라: 화면 변환·보간·컬링 범위 (그리기 전용, camera.test.ts)
       input.ts, controller.ts, useTurboKart.ts, TurboKartGame.tsx, renderer.ts(Path2D 트랙·미니맵·캔버스 HUD), audio/(cues·sfx·music 3곡·KartAudio)
+    shadow-of-the-citadel/   # Canvas 2D 시네마틱 플랫폼 움직임 프로토타입 (status: "prototype", 아래 "Shadow of the Citadel" 참고)
+      config.ts, level.ts    # 물리·카메라 값 / 테스트 공간(100×20 타일, 지형 7종·테스트 위치·장식)
+      logic/                 # 순수 TS: world(타일·난간 판정), player(상태·물리), *.test.ts
+      animation/             # skeleton(골격·IK·보간), poses(동작별 포즈), animator(전환·스프링), animation.test.ts
+      render/                # background(픽셀 아트 3층), character(벡터 캐릭터·망토), renderer
+      camera.ts, controller.ts, input.ts, useShadowGame.ts, ShadowGame.tsx
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
@@ -115,7 +122,8 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 
 1. `src/data/types.ts`의 `GAME_SLUGS`에 slug(kebab-case) 추가
 2. `src/data/games.ts`에 메타데이터 추가 — `about`(소개 문단), `rules`(규칙), `controls`, 선택 `tips` 포함.
-   (`status: "coming-soon"`이면 목록에만 노출되고 페이지는 404)
+   (`status: "coming-soon"`이면 목록에만 노출되고 페이지는 404.
+   `status: "prototype"`이면 목록·sitemap에서 빠지고 noindex이며, Vercel Production(`VERCEL_ENV=production`)에서는 404 — 로컬·Preview에서만 열린다)
 3. `src/games/<slug>/` 생성 후 `index.ts`에서 루트 컴포넌트를 default export
 4. `src/games/registry.tsx`에 `dynamic(() => import("./<slug>"), { ssr: false, loading: GameLoading })` 등록
 5. `public/games/<slug>/thumbnail.*` 추가
@@ -215,6 +223,23 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 난수는 `RaceState.rng`(시드)만 쓴다. `Math.random()`은 renderer 연출과 시드 생성에만 쓴다.
 - 저장: `my-game-hub:turbo-kart:records`, `:sound`, `:music`, `:camera`(1 = 회전 기본, 0 = 고정). 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__TURBO_KART__`(컨트롤러·오디오) 노출.
 - 저작권: 탑다운 카트 레이싱 장르만 참고했다. 카트·트랙·장애물 그래픽, BGM 3곡, 효과음은 모두 자체 제작이며 외부 에셋이 없다. 상용 레이싱 게임의 이름·캐릭터·트랙·음악을 쓰지 않는다.
+
+### 개발 중 게임 / 브랜치
+- `main`은 Vercel Production 브랜치다(Push 즉시 배포). 공개 전 게임은 `feature/<이름>` 브랜치에서 `status: "prototype"`으로 개발하고 Vercel Preview로 확인한다.
+- Shadow of the Citadel은 `feature/shadow-prototype`에서만 개발한다. main 변경은 `git merge main`으로 받아 오고 rebase·force push는 하지 않는다.
+  완성되면 `status`를 `"available"`로 바꾸고 PR로 main에 병합한다.
+
+### Shadow of the Citadel (Canvas 2D, 프로토타입)
+- `status: "prototype"`: 목록·sitemap에 없고 noindex, Vercel Production에서는 404. `feature/shadow-prototype` 브랜치에서만 개발한다.
+- 규칙은 `logic/`에만 둔다. 물리는 고정 1/120초, 좌표는 발 위치(x 가운데, y 발바닥). 지면 접촉은 발, 난간은 손 기준점(몸 앞면, 발 - `LEDGE.hangDepth`)으로 판정한다.
+  매달린 위치·올라온 위치는 `logic/world.ts`의 `hangPosition`·`standPosition` 하나로 정하고 물리와 애니메이션이 같이 쓴다.
+- 애니메이션은 관절 골격(`animation/skeleton.ts`) + IK다. 디딤발·매달린 손은 목표 위치를 IK로 맞추고, 걷기·달리기 위상은 이동 거리로 진행한다(발 미끄러짐 없음).
+  올라오기는 물리 `climbT`와 같은 진행도로 키 포즈를 따라가며 마지막 포즈가 대기 자세 시작과 같다. 포즈를 바꾸면 `npm run test:shadow-of-the-citadel`
+  (발 미끄러짐·돌 관통·손 고정·프레임 간 자세 튐)을 돌린다. 팔 각도 보간은 `lerpArm`(머리 위로 뒤로 도는 경로 금지)을 쓴다.
+- 망토·머리끈(verlet)·먼지·횃불은 그리기 전용이며 `Math.random()`은 연출에만 쓴다. 디버그 재생 속도는 물리·애니메이션에 같이 적용된다.
+- 저장소·쿠키·사운드를 쓰지 않는다(개인정보처리방침 변경 없음). 개발 서버에서만 `window.__SHADOW_CITADEL__`(컨트롤러) 노출.
+- 저작권: 1989년 시네마틱 플랫폼 게임의 "움직임의 자연스러움"이라는 아이디어만 참고했다. 캐릭터(청록 여행복·가죽 장비·짧은 망토)·배경·지형·UI는 모두 코드로 직접 그린 오리지널이며
+  외부 에셋·원작 스프라이트/프레임/캐릭터/스테이지/음악/로고를 쓰지 않는다. 게임 설명·키워드에 원작 상표명을 쓰지 않는다.
 
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
