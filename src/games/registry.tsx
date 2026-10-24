@@ -63,6 +63,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: () => <GameLoading shape="race" />,
   }),
+  // Frosty Roll도 Canvas 2D만 쓴다(Phaser 미사용).
+  "frosty-roll": dynamic(() => import("./frosty-roll"), {
+    ssr: false,
+    loading: () => <GameLoading shape="battle" />,
+  }),
 };
 
 export function GameLoader({ slug }: { slug: GameSlug }) {

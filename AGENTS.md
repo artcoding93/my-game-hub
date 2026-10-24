@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
-- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart는 Canvas 2D를 직접 사용한다.
+- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart·Frosty Roll은 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -31,6 +31,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run test:seo:build` | 빌드 결과물 검증 (`npm run build` 후 실행: sitemap.xml·robots.txt·프리렌더 HTML의 canonical·robots·홈 링크) |
 | `npm run test:cannon-rivals` | Cannon Rivals 자동화 테스트 (물리·지형·규칙·AI 명중률 시뮬레이션·코인 저장·BGM). `CANNON_SIM=full`이면 300회 측정 + 자동 대전 전투 길이 |
 | `npm run test:turbo-kart` | Turbo Kart 자동화 테스트 (차량 물리·트랙 검증·랩/순위·아이템·기록·BGM, AI 4대 완주 시뮬레이션 9개 조합). `TURBO_SIM=full`이면 조합마다 5회 |
+| `npm run test:frosty-roll` | Frosty Roll 자동화 테스트 (눈 누적·연쇄·낙하·동시 굴림·탈출·보스·아이템 제한·적 안정성, 실제 점프 물리 도달 가능성, 자동 플레이로 5스테이지 클리어, 사운드) |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -101,6 +102,12 @@ src/
       records.ts             # 기록 저장 형식·검증
       camera.ts              # 회전(chase)·고정(topdown) 카메라: 화면 변환·보간·컬링 범위 (그리기 전용, camera.test.ts)
       input.ts, controller.ts, useTurboKart.ts, TurboKartGame.tsx, renderer.ts(Path2D 트랙·미니맵·캔버스 HUD), audio/(cues·sfx·music 3곡·KartAudio)
+    frosty-roll/             # Canvas 2D 고정 화면 눈덩이 플랫폼 액션 (아래 "Frosty Roll" 참고)
+      config.ts, stages.ts   # 밸런스 값 / 스테이지 5개 지도(32×16)·바람·움직이는 발판
+      logic/                 # 순수 TS: level(지도·발판), physics(moveBody), game(규칙), rng, testUtils·*.test.ts(reach: 도달 가능성)
+      render/                # pixels(픽셀 격자·자동 외곽선), sprites(캐릭터·적·아이템), scenery(배경·타일), renderer
+      audio/                 # sfx(효과음), music(BGM 2곡), FrostyAudio(이벤트→효과음)
+      controller.ts, input.ts, useFrostyRoll.ts, FrostyRollGame.tsx
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker), loopPlayer(look-ahead BGM 재생기). Gold Escape·Star Vanguard BGM이 사용
     games.ts                 # 게임 조회 헬퍼 (getAllGames, getGameBySlug, getGamePath ...)
@@ -215,6 +222,17 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 난수는 `RaceState.rng`(시드)만 쓴다. `Math.random()`은 renderer 연출과 시드 생성에만 쓴다.
 - 저장: `my-game-hub:turbo-kart:records`, `:sound`, `:music`, `:camera`(1 = 회전 기본, 0 = 고정). 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__TURBO_KART__`(컨트롤러·오디오) 노출.
 - 저작권: 탑다운 카트 레이싱 장르만 참고했다. 카트·트랙·장애물 그래픽, BGM 3곡, 효과음은 모두 자체 제작이며 외부 에셋이 없다. 상용 레이싱 게임의 이름·캐릭터·트랙·음악을 쓰지 않는다.
+
+### Frosty Roll (Canvas 2D)
+- 규칙은 `logic/`에만 둔다. 플레이어·적·눈덩이·아이템·톱니가 모두 `logic/physics.ts`의 `moveBody`(축별 충돌, 발판은 위에서만 착지)를 쓴다. 고정 1/60초.
+- 적 상태: active(눈 0~2) → ball(갇힘, 탈출 타이머·금) → rolling(차서 굴림) → dead. 굴러가는 눈덩이가 쓰러뜨린 수가 연쇄(`chain`)이며
+  점수는 `CHAIN_POINTS`로 쓰러지는 순간 한 번만 준다. 굴러가는 눈덩이는 플레이어에게 피해를 주지 않는다. 벽 반동 `BALL.maxBounces` 뒤 다음 벽에서 부서진다.
+- 스테이지 클리어는 굴러가는 눈덩이까지 모두 사라졌을 때다(연쇄가 끝까지 이어짐). 보스는 굴린 눈덩이로만 맞고, 눈덩이 재료가 떨어지지 않도록 졸개를 소환한다.
+- 지도·적 배치를 바꾸면 `npm run test:frosty-roll`을 돌린다(`reach.test.ts`가 실제 점프 물리로 모든 발판·적 위치 도달, 자동 플레이 테스트가 5스테이지 클리어를 검사).
+- 난수는 `GameState.rng`(시드)만 쓴다. `Math.random()`은 renderer 연출과 시드 생성에만 쓴다. 화면 흔들림은 상태가 요청만 하고 렌더러가 설정에 따라 적용한다.
+- 저장: `my-game-hub:frosty-roll:high-score`, `:checkpoint`, `:sound`, `:music`, `:shake`, `:easy-push`. 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__FROSTY_ROLL__` 노출.
+- 저작권: 1990년대 오락실 눈덩이 플랫폼 장르의 일반 규칙만 참고했다. 북극여우·적·보스·배경 그림(`render/`), 스테이지 배치, BGM 2곡과 효과음은 모두 자체 제작이며 외부 에셋이 없다.
+  다른 게임의 이름·캐릭터·스테이지·음악을 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다. "Frosty Roll"은 가칭이므로 정식 공개 전 상표 중복을 확인한다.
 
 ### 광고 (AdSense)
 - 광고는 반드시 `src/components/AdSlot.tsx`를 통해서만 넣는다. 실제 스크립트는 아직 연결하지 않았다.
