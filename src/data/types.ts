@@ -4,7 +4,7 @@
  * 데이터(`games.ts`)와 컴포넌트 레지스트리(`src/games/registry.tsx`)에서
  * 누락된 항목이 타입 에러로 드러난다.
  */
-export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard", "lost-relic", "winter-blocks", "cannon-rivals", "turbo-kart", "frosty-roll"] as const;
+export const GAME_SLUGS = ["snake-classic", "gold-escape", "star-vanguard", "lost-relic", "winter-blocks", "cannon-rivals", "turbo-kart", "frosty-roll", "bubble-pop-adventure"] as const;
 
 export type GameSlug = (typeof GAME_SLUGS)[number];
 

@@ -69,6 +69,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: () => <GameLoading shape="battle" />,
   }),
+  // Bubble Pop Adventure도 Canvas 2D만 쓴다(Phaser 미사용).
+  "bubble-pop-adventure": dynamic(() => import("./bubble-pop-adventure"), {
+    ssr: false,
+    loading: () => <GameLoading shape="battle" />,
+  }),
 };
 
 export function GameLoader({ slug }: { slug: GameSlug }) {

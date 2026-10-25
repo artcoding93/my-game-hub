@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
-- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart·Frosty Roll은 Canvas 2D를 직접 사용한다.
+- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart·Frosty Roll·Bubble Pop Adventure는 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -34,6 +34,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run test:cannon-rivals` | Cannon Rivals 자동화 테스트 (물리·지형·규칙·AI 명중률 시뮬레이션·코인 저장·BGM). `CANNON_SIM=full`이면 300회 측정 + 자동 대전 전투 길이 |
 | `npm run test:turbo-kart` | Turbo Kart 자동화 테스트 (차량 물리·트랙 검증·랩/순위·아이템·기록·BGM, AI 4대 완주 시뮬레이션 9개 조합). `TURBO_SIM=full`이면 조합마다 5회 |
 | `npm run test:frosty-roll` | Frosty Roll 자동화 테스트 (눈 누적·연쇄·낙하·동시 굴림·탈출·보스·아이템 제한·적 안정성, 실제 점프 물리 도달 가능성, 자동 플레이로 5스테이지 클리어, 사운드) |
+| `npm run test:bubble-pop-adventure` | Bubble Pop Adventure 자동화 테스트 (방울 발사·포획·상승·천장 모임·바람, 연쇄 터짐·콤보, 방울 밟기, 아이템·Time Freeze, 보스, 적 안정성, 실제 점프 물리로 발판·적·모이는 지점 도달, 자동 플레이로 5스테이지 클리어, 사운드) |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -110,6 +111,12 @@ src/
       render/                # pixels(픽셀 격자·자동 외곽선), sprites(캐릭터·적·아이템), scenery(배경·타일), renderer
       audio/                 # sfx(효과음), music(BGM 2곡), FrostyAudio(이벤트→효과음)
       controller.ts, input.ts, useFrostyRoll.ts, FrostyRollGame.tsx
+    bubble-pop-adventure/    # Canvas 2D 고정 화면 방울 포획 플랫폼 액션 (아래 "Bubble Pop Adventure" 참고)
+      config.ts, stages.ts   # 밸런스 값 / 스테이지 5개 지도(32×16)·방울 모이는 지점(gather)·바람·움직이는 발판
+      logic/                 # 순수 TS: level, physics(moveBody), game(규칙·방울·콤보·보스), rng, testUtils·*.test.ts(reach: 도달 가능성)
+      render/                # pixels(픽셀 격자·자동 외곽선), sprites(Lumi·기계 요정·Chime Queen·방울·아이템), scenery(배경·타일), renderer
+      audio/                 # sfx(효과음), music(BGM 2곡), BubbleAudio(이벤트→효과음)
+      controller.ts, input.ts, useBubblePop.ts, BubblePopGame.tsx
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker·createAudioContext), loopPlayer(look-ahead BGM 재생기),
                              #   unlock(모든 게임 AudioContext 등록·사용자 입력/탭 복귀 때 resume·막힘 감지, iOS 대응)
@@ -237,6 +244,18 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 저작권: 1990년대 오락실 눈덩이 플랫폼 장르의 일반 규칙만 참고했다. 북극여우·적·보스·배경 그림(`render/`), 스테이지 배치, BGM 2곡과 효과음은 모두 자체 제작이며 외부 에셋이 없다.
   다른 게임의 이름·캐릭터·스테이지·음악을 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다. "Frosty Roll"은 가칭이므로 정식 공개 전 상표 중복을 확인한다.
 
+### Bubble Pop Adventure (Canvas 2D)
+- 규칙은 `logic/`에만 둔다. 플레이어·적·아이템은 `logic/physics.ts`의 `moveBody`(고정 1/60초)를 쓰고, 방울은 `game.ts`의 `moveBubble`로 벽(`#`)에만 막히며 발판은 통과한다.
+- 방울: shot(약 5칸, 닿은 적을 가둠) → float(상승, 바람 스테이지는 옆으로 밀림, 천장에 닿으면 `stage.gather` 중 가장 가까운 x로 모임).
+  플레이어가 닿으면 터지고, 닿아 있는 방울은 `chainDelay` 간격으로 함께 터진다. `COMBO.window` 안에 이어 쓰러뜨린 수가 콤보이며 점수는 `COMBO_POINTS`로 쓰러지는 순간 한 번만 준다.
+  점프 키를 누른 채 위에서 밟으면 터지지 않고 `bounceVelocity`로 튕긴다. 갇힌 적은 `escapeTime` 뒤 탈출(화남).
+- `stage.gather`는 플레이어가 발판에서 뛰어 닿을 수 있는 곳 위에 둔다(`reach.test.ts`가 검사). 보스 Chime Queen은 방울에 갇히지 않고, 갇힌 적을 터뜨릴 때 나오는 별빛 조각(`sparks`)으로만 맞는다.
+- 지도·적 배치·gather를 바꾸면 `npm run test:bubble-pop-adventure`를 돌린다(실제 점프 물리로 모든 발판·적·모이는 지점 도달, 자동 플레이로 5스테이지 클리어).
+- 난수는 `GameState.rng`(시드)만 쓴다. `Math.random()`은 renderer 연출과 시드 생성에만 쓴다. 화면 흔들림은 상태가 요청만 하고 렌더러가 설정에 따라 적용한다.
+- 저장: `my-game-hub:bubble-pop-adventure:high-score`, `:checkpoint`, `:sound`, `:music`, `:shake`. 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__BUBBLE_POP__` 노출.
+- 저작권: 1980년대 오락실 방울 포획 플랫폼 장르의 일반 규칙만 참고했다. 별빛 정령 Lumi·기계 요정·Chime Queen·배경(`render/`), 스테이지 배치, BGM 2곡과 효과음은 모두 자체 제작이며 외부 에셋이 없다.
+  다른 게임의 이름·캐릭터·스테이지·음악을 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다. "Bubble Pop Adventure"는 가칭이므로 정식 공개 전 상표 중복을 확인한다.
+
 ### 사운드 공통 (iOS Safari 대응)
 - 모든 게임은 Web Audio API만 쓴다(HTMLAudioElement 없음). AudioContext는 반드시 `lib/audio/synth.ts`의 `createAudioContext()`로 만든다
   (무음 1샘플 재생 + `lib/audio/unlock.ts` 자동 등록). 재생 재개는 `resumeAudioContext`, 일부러 멈출 때(효과음·BGM 모두 끔)는 `suspendAudioContext`,
@@ -280,7 +299,7 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ### 정책 페이지 / 운영자 정보
 - 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.
 - 코드로 값을 넣을 수 없는 확인 사항(로그 보존 기간, 배포 리전 등)은 `<TodoMark label="..."/>`와 `{/* TODO: ... */}` 주석으로 표시한다. `grep -rn "TODO" src`로 전체 목록을 볼 수 있다.
-- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정, Lost Relic 진행 저장·최단 기록, Cannon Rivals 게임 내 코인·전적·구매 아이템, Turbo Kart 트랙별 기록). 쿠키·광고·Google Analytics는 없음.
+- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정, Lost Relic 진행 저장·최단 기록, Cannon Rivals 게임 내 코인·전적·구매 아이템, Turbo Kart 트랙별 기록, Frosty Roll·Bubble Pop Adventure 최고 점수·체크포인트·설정). 쿠키·광고·Google Analytics는 없음.
 - AdSense나 분석 도구를 연결하는 변경에는 반드시 개인정보처리방침 개정(쿠키, 맞춤 광고 해제 방법, 위탁·국외 이전 표)을 포함한다. 방침 파일 상단 주석의 체크리스트를 따른다.
 - 연락처 이메일을 코드에 하드코딩하지 않는다(`operatorConfig.email` 사용).
 

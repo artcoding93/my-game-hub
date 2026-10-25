@@ -13,6 +13,7 @@
     "test:cannon-rivals": "node --import ./scripts/ts-test-hooks.mjs --test src/games/cannon-rivals/*.test.ts src/games/cannon-rivals/logic/*.test.ts src/games/cannon-rivals/audio/*.test.ts",
     "test:turbo-kart": "node --import ./scripts/ts-test-hooks.mjs --test src/games/turbo-kart/*.test.ts src/games/turbo-kart/logic/*.test.ts src/games/turbo-kart/audio/*.test.ts",
     "test:frosty-roll": "node --import ./scripts/ts-test-hooks.mjs --test src/games/frosty-roll/logic/*.test.ts src/games/frosty-roll/audio/*.test.ts",
+    "test:bubble-pop-adventure": "node --import ./scripts/ts-test-hooks.mjs --test src/games/bubble-pop-adventure/logic/*.test.ts src/games/bubble-pop-adventure/audio/*.test.ts",
     "test:snake-classic": "node --import ./scripts/ts-test-hooks.mjs --test src/games/snake-classic/*.test.ts",
     "test:audio": "node --import ./scripts/ts-test-hooks.mjs --test src/lib/audio/*.test.ts",
     "test:winter-blocks": "node --import ./scripts/ts-test-hooks.mjs --test src/games/winter-blocks/logic/*.test.ts src/games/winter-blocks/audio/*.test.ts"
