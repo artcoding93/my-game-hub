@@ -24,13 +24,44 @@ export const KART = {
   reverseMax: 120,
   /** 가속 페달을 떼었을 때 감속 비율 (초당) */
   coastDrag: 0.55,
-  /** 조향 각속도 (rad/s). refSpeed보다 느리면 비례해서 줄어든다. */
-  turnRate: 2.7,
-  turnRefSpeed: 170,
   /** 옆미끄러짐을 줄이는 접지력 (초당 감쇠) */
   grip: 11,
-  driftGrip: 2.4,
-  driftTurnScale: 1.45,
+  /** 드리프트 중 접지력: 옆으로 미끄러지되 진행 방향을 놓치지 않을 만큼 */
+  driftGrip: 6,
+} as const;
+
+/**
+ * 조향 (Smooth Steering). 키보드·터치 입력(-1·0·1)을 회전에 바로 쓰지 않는다.
+ *   입력 → 조향값(시간 기반으로 이동) → 목표 각속도(조향값 × 속도별 최대 각속도) → 실제 각속도(지수 보간) → heading
+ * 물리는 고정 1/60초 간격으로만 진행하므로 화면 프레임 수(30·60·120FPS)와 관계없이 같은 감각이다.
+ */
+export const STEERING = {
+  /** 중립에서 끝까지 꺾는 데 걸리는 시간 (같은 방향) */
+  rampTime: 0.18,
+  /** 손을 떼면(또는 덜 꺾으면) 중립으로 돌아오는 시간 */
+  releaseTime: 0.1,
+  /** 반대쪽 끝까지 바꾸는 데 걸리는 시간 (장애물 회피를 위해 빠르게) */
+  reverseTime: 0.2,
+  /** 최대 각속도 (rad/s). 정지~refSpeed까지는 속도에 비례해 커지고 */
+  maxYaw: 2.6,
+  refSpeed: 170,
+  /** refSpeed보다 빠르면 줄어든다: maxYaw / (1 + highSpeedFalloff × (속도 − refSpeed) / 최고 속도) → 400px/s에서 약 2.0 */
+  highSpeedFalloff: 0.5,
+  /** 실제 각속도가 목표 각속도를 따라가는 시간 상수 (초): 회전이 커질 때 */
+  yawResponse: 0.07,
+  /** 회전이 줄어들 때(조향을 풀거나 반대로 꺾을 때)는 더 빨리 감쇠해 놓은 뒤 계속 돌지 않는다 */
+  yawRelease: 0.045,
+  /** 어떤 경우(드리프트·부스터 포함)에도 넘지 않는 각속도 (rad/s) */
+  yawCap: 3,
+  /** 부스터·Turbo Boost 중: 최대 각속도를 조금 줄이고 회전이 커지는 속도를 더 부드럽게 (스핀 방지. 감쇠는 yawRelease 그대로) */
+  boostYawScale: 0.88,
+  boostYawResponse: 0.1,
+  /** 벽·장애물에 부딪힌 직후 남기는 각속도 비율 (충돌 후 계속 도는 것 방지) */
+  collisionYawKeep: 0.2,
+  /** 스핀 방지: 차체 방향과 실제 진행 방향 차이(슬립각)가 이보다 크면 그쪽으로 더 돌지 않는다 (rad, 약 30°) */
+  maxSlipAngle: 0.52,
+  /** 슬립각이 maxSlipAngle보다 이만큼 작을 때부터 회전을 서서히 줄인다 (켜졌다 꺼졌다 흔들리지 않게) */
+  slipFade: 0.2,
 } as const;
 
 export const SURFACES = {
@@ -51,9 +82,22 @@ export const COLLISION = {
   kartRestitution: 0.35,
 } as const;
 
+/**
+ * 자동 드리프트 (드리프트 버튼 없음). 진입·종료 조건을 다르게 두어(히스테리시스) 상태가 빠르게 반복 전환되지 않는다.
+ * 진입: 최고 속도의 minSpeedRatio 이상에서 조향값 enterSteer 이상을 enterTime 동안 유지 (벽 충돌 직후 제외)
+ * 종료: 조향값이 releaseSteer 아래로 exitTime 동안 내려가거나, 속도가 exitSpeedRatio 아래
+ * 드리프트는 각속도를 무조건 늘리지 않는다: 조향값에 비례하는 목표 각속도에 yawScale만 곱하고 yawCap을 넘지 않는다.
+ */
 export const DRIFT = {
-  /** 이 속도(최고 속도 대비) 이상, 조향 중, 드리프트 버튼일 때만 드리프트 */
-  minSpeedRatio: 0.5,
+  minSpeedRatio: 0.6,
+  exitSpeedRatio: 0.45,
+  enterSteer: 0.85,
+  releaseSteer: 0.35,
+  enterTime: 0.25,
+  exitTime: 0.18,
+  yawScale: 1.2,
+  /** 드리프트 중 옆미끄러짐으로 잃는 속도 중 전진 속도로 되돌리는 비율 (드리프트해도 속도가 크게 줄지 않게) */
+  slipTransfer: 0.85,
   /** 실제로 옆으로 미끄러지는 속도(px/s)가 이 이상일 때만 게이지 충전 */
   minSlip: 22,
   chargePerSecond: 40,

@@ -22,9 +22,8 @@ export interface Vec {
 export interface DriveInput {
   throttle: boolean;
   brake: boolean;
-  /** -1 = 왼쪽, 1 = 오른쪽 */
+  /** -1 = 왼쪽, 1 = 오른쪽 (키보드·터치는 -1·0·1, AI는 사이 값도 쓴다). 드리프트는 자동이라 입력이 없다 */
   steer: number;
-  drift: boolean;
   /** 이번 스텝에 눌렀는지 (한 번만 동작) */
   boost: boolean;
   item: boolean;
@@ -39,9 +38,16 @@ export interface Kart {
   heading: number;
   vx: number;
   vy: number;
+  /** 부드럽게 옮겨 가는 조향값 (-1 ~ 1). 입력을 바로 쓰지 않는다 */
+  steerValue: number;
+  /** 실제 각속도 (rad/s) */
+  yawRate: number;
   /** 드리프트 중 */
   drifting: boolean;
   driftDir: number;
+  /** 자동 드리프트 진입 조건(빠름 + 강한 조향)을 유지한 시간 / 종료 조건을 유지한 시간 */
+  driftHold: number;
+  driftRelease: number;
   /** 이번 스텝에 유효한 드리프트(게이지 충전 중)였는지 */
   driftCharging: boolean;
   /** 부스터 게이지 0~100 */

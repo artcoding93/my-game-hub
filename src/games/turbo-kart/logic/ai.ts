@@ -28,8 +28,6 @@ export interface Personality {
   avoidKarts: boolean;
   /** 앞 카트에 붙으려는 정도 */
   chase: number;
-  /** 이 꺾임 각도 이상에서 드리프트 */
-  driftAngle: number;
   /** 공격 아이템을 들고 기다리는 시간 */
   attackDelay: number;
   /** 부스터를 쓰는 직선 판정 각도 */
@@ -38,13 +36,13 @@ export interface Personality {
 
 export const PERSONALITIES: Record<DriverId, Personality> = {
   // Bolt (공격형): 공격 아이템 즉시 사용, 다른 카트 쪽으로 붙는다, 코너에서 가끔 실수
-  bolt: { caution: 1, mistakeChance: 0.18, useShortcut: false, avoid: 0.75, avoidKarts: false, chase: 0.35, driftAngle: 0.7, attackDelay: 0, boostAngle: 0.3 },
+  bolt: { caution: 1, mistakeChance: 0.18, useShortcut: false, avoid: 0.75, avoidKarts: false, chase: 0.35, attackDelay: 0, boostAngle: 0.3 },
   // Luna (안정형): 장애물 회피 우선, 조심스러운 코너, 방어 아이템을 잘 쓴다
-  luna: { caution: 0.94, mistakeChance: 0.02, useShortcut: false, avoid: 1.1, avoidKarts: true, chase: 0, driftAngle: 0.8, attackDelay: 1.5, boostAngle: 0.25 },
-  // Dash (도전형): 지름길·드리프트·부스터 적극 사용, 위험한 코너에서 가끔 실수
-  dash: { caution: 1.03, mistakeChance: 0.14, useShortcut: true, avoid: 0.85, avoidKarts: true, chase: 0, driftAngle: 0.5, attackDelay: 1, boostAngle: 0.45 },
+  luna: { caution: 0.94, mistakeChance: 0.02, useShortcut: false, avoid: 1.1, avoidKarts: true, chase: 0, attackDelay: 1.5, boostAngle: 0.25 },
+  // Dash (도전형): 지름길·부스터 적극 사용, 위험한 코너에서 가끔 실수
+  dash: { caution: 1.03, mistakeChance: 0.14, useShortcut: true, avoid: 0.85, avoidKarts: true, chase: 0, attackDelay: 1, boostAngle: 0.45 },
   // 테스트 자동 주행용 (플레이어 자리)
-  player: { caution: 0.97, mistakeChance: 0, useShortcut: false, avoid: 1, avoidKarts: true, chase: 0, driftAngle: 0.75, attackDelay: 1, boostAngle: 0.3 },
+  player: { caution: 0.97, mistakeChance: 0, useShortcut: false, avoid: 1, avoidKarts: true, chase: 0, attackDelay: 1, boostAngle: 0.3 },
 };
 
 export interface AiMemory {
@@ -108,7 +106,7 @@ export function aiInput(race: Race, kart: Kart, memory: AiMemory): DriveInput {
   const { state, track, env } = race;
   const p = PERSONALITIES[memory.id];
   const dt = 1 / 60;
-  const input: DriveInput = { throttle: true, brake: false, steer: 0, drift: false, boost: false, item: false };
+  const input: DriveInput = { throttle: true, brake: false, steer: 0, boost: false, item: false };
   if (kart.frozenTime > 0) return { ...input, throttle: false };
 
   const fx = Math.cos(kart.heading);
@@ -246,7 +244,8 @@ export function aiInput(race: Race, kart: Kart, memory: AiMemory): DriveInput {
   // 2. 곡률 감속 (노면이 미끄러우면 더 조심)
   const ahead = roadAt(track, p1.x, p1.y);
   const slick = surfaceAt(track, ahead, state.difficulty);
-  let targetSpeed = KART.maxSpeed * Math.max(0.4, Math.min(1, 1.08 - curve * 0.62)) * p.caution;
+  // 조향은 부드럽게 반응하고 고속일수록 덜 돌므로(physics의 STEERING) 꺾임이 클수록 미리 충분히 감속한다
+  let targetSpeed = KART.maxSpeed * Math.max(0.4, Math.min(1, 1.08 - curve * 0.85)) * p.caution;
   if (slick === "ice" || slick === "sand") targetSpeed *= 0.86;
   if (kart.smokeTime > 0) targetSpeed *= 0.88;
 
@@ -268,11 +267,9 @@ export function aiInput(race: Race, kart: Kart, memory: AiMemory): DriveInput {
     input.brake = speed > targetSpeed + 60;
   }
 
-  // 5. 드리프트·부스터
-  const driftOn = memory.wasDrifting ? curve > p.driftAngle * 0.55 : curve > p.driftAngle;
-  input.drift = driftOn && speed > KART.maxSpeed * 0.55 && Math.abs(input.steer) > 0.25;
-  if (input.drift && !memory.wasDrifting) memory.drifts++;
-  memory.wasDrifting = input.drift;
+  // 5. 드리프트(플레이어와 같은 자동 드리프트: 빠르게 크게 꺾으면 물리가 시작한다)·부스터
+  if (kart.drifting && !memory.wasDrifting) memory.drifts++;
+  memory.wasDrifting = kart.drifting;
   if (kart.gauge >= 100 && curve < p.boostAngle && kart.surface !== "offroad") {
     input.boost = true;
     memory.boosts++;
@@ -298,7 +295,6 @@ export function aiInput(race: Race, kart: Kart, memory: AiMemory): DriveInput {
     input.brake = true;
     // 후진 중에는 조향 방향이 반대로 작용하므로, 머리가 escapeSide 쪽을 향하도록 반대로 꺾는다
     input.steer = -memory.escapeSide;
-    input.drift = false;
   } else if (memory.escapeTime > 0) {
     memory.escapeTime = Math.max(0, memory.escapeTime - dt);
     input.steer = memory.escapeSide;

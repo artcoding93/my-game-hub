@@ -222,6 +222,10 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 
 ### Turbo Kart (Canvas 2D)
 - 규칙은 `logic/`에만 둔다. 플레이어와 AI는 같은 `DriveInput` → `physics.ts`(고정 1/60초, 충돌 2단계)를 쓴다. AI의 물리 값(최고 속도·가속)은 성향·난이도와 무관하게 같다.
+- 조향은 입력을 각도에 바로 쓰지 않는다: 입력(-1·0·1) → `steerValue`(시간 기반 이동) → 목표 각속도(`yawLimit`: 속도가 높을수록 작음, 부스터 중 더 작음) → `yawRate`(지수 보간, 풀 때 더 빠른 감쇠) → heading.
+  각속도 상한 `STEERING.yawCap`, 슬립각 제한 `maxSlipAngle`(스핀 방지), 세게 부딪히면 `collisionYawKeep`만 남긴다. 값은 config의 `STEERING`에서만 바꾼다.
+- 드리프트는 자동이다(입력·버튼 없음, 플레이어·AI 공통): 빠른 속도 + 강한 조향 유지로 진입, 조향을 풀면 종료(히스테리시스, config의 `DRIFT`).
+  조향·드리프트 값을 바꾸면 `npm run test:turbo-kart`의 `steering.test.ts`(짧은 탭·회피·고속 코너·부스터·충돌·방향키만으로 한 바퀴)와 `controls.test.ts`(30/60/120FPS·터치)를 다시 확인한다.
 - 좌표는 월드 좌표만 규칙에 쓴다. 카메라(`camera.ts`)는 그리기 전용이다. 기본 "chase"는 카트를 화면 아래 가운데(anchorY)에 두고
   카트 전방이 화면 위를 향하도록 월드를 돌려 그린다(지수 보간 + 최대 회전 속도 제한, 스핀 중 회전 정지). "topdown"은 북쪽이 위인 고정 시점.
   조향 입력은 항상 카트 기준이며 카메라와 무관하다. 미니맵·HUD는 화면 고정(미니맵은 북쪽이 위). 회전 시 컬링은 `viewBounds`(화면 네 모서리 역변환)를 쓴다.

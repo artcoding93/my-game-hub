@@ -2,10 +2,11 @@ import type { DriveInput } from "./types";
 
 /*
  * 키보드·터치 공용 입력 상태. 여러 입력원(키·버튼)이 같은 동작을 동시에 누를 수 있으므로
- * 동작별로 누르고 있는 입력원 집합을 둔다(멀티터치: 조향 + 가속 + 드리프트 동시 입력).
+ * 동작별로 누르고 있는 입력원 집합을 둔다(멀티터치: 조향 + 가속 동시 입력).
+ * 조향은 -1·0·1만 전달한다. 부드러운 조향·자동 드리프트는 물리(logic/physics.ts)가 맡으므로 키보드와 터치가 똑같이 동작한다.
  */
 
-export type HoldAction = "throttle" | "brake" | "left" | "right" | "drift";
+export type HoldAction = "throttle" | "brake" | "left" | "right";
 export type TapAction = "boost" | "item";
 
 export const KEY_TO_HOLD: Record<string, HoldAction> = {
@@ -17,8 +18,6 @@ export const KEY_TO_HOLD: Record<string, HoldAction> = {
   ArrowLeft: "left",
   KeyD: "right",
   ArrowRight: "right",
-  ShiftLeft: "drift",
-  ShiftRight: "drift",
 };
 
 export const KEY_TO_TAP: Record<string, TapAction> = {
@@ -32,7 +31,6 @@ export class InputState {
     brake: new Set(),
     left: new Set(),
     right: new Set(),
-    drift: new Set(),
   };
   private taps = new Set<TapAction>();
 
@@ -63,7 +61,6 @@ export class InputState {
       throttle: this.isHeld("throttle"),
       brake: this.isHeld("brake"),
       steer: (this.isHeld("right") ? 1 : 0) - (this.isHeld("left") ? 1 : 0),
-      drift: this.isHeld("drift"),
       boost: this.taps.has("boost"),
       item: this.taps.has("item"),
     };

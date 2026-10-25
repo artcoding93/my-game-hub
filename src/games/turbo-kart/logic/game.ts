@@ -72,8 +72,12 @@ function newKart(id: DriverId, index: number, x: number, y: number, heading: num
     heading,
     vx: 0,
     vy: 0,
+    steerValue: 0,
+    yawRate: 0,
     drifting: false,
     driftDir: 0,
+    driftHold: 0,
+    driftRelease: 0,
     driftCharging: false,
     gauge: 0,
     boostTime: 0,
@@ -242,6 +246,9 @@ export function recoverKart(race: Race, kart: Kart, events: RaceEvent[]) {
   kart.turboTime = 0;
   kart.windTime = 0;
   kart.drifting = false;
+  kart.driftHold = 0;
+  kart.steerValue = 0;
+  kart.yawRate = 0;
   kart.spinTime = 0;
   kart.recoveries++;
   events.push({ type: "recover", kart: kart.index });

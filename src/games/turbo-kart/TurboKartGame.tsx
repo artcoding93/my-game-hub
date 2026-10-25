@@ -87,7 +87,7 @@ function Title({ game }: { game: KartGameApi }) {
     <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
       <KartBadge />
       <p className="max-w-md font-sans text-sm leading-6 text-slate-300">
-        AI 카트 3대와 3바퀴 레이스! 드리프트로 부스터를 모으고, 아이템과 지름길로 역전하세요.
+        AI 카트 3대와 3바퀴 레이스! 방향키만으로 코너를 돌면 자동 드리프트로 부스터가 모입니다. 아이템과 지름길로 역전하세요.
       </p>
       <div className="flex flex-wrap justify-center gap-2">
         <button type="button" className={primary} onClick={() => game.go("track")}>
@@ -130,10 +130,10 @@ function HowTo({ game }: { game: KartGameApi }) {
   return (
     <div className="flex flex-col gap-3 font-sans text-sm leading-6 text-slate-200">
       <ul className="list-disc space-y-1 pl-5">
-        <li>PC: W/↑ 가속, S/↓ 브레이크, A·D/←·→ 조향, Shift 드리프트, Space 부스터, E 아이템, P/Esc 일시정지</li>
-        <li>모바일: 화면 아래 버튼. 조향·가속·드리프트를 동시에 누를 수 있습니다.</li>
+        <li>PC: W/↑ 가속, S/↓ 브레이크, A·D/←·→ 조향, Space 부스터, E 아이템, P/Esc 일시정지</li>
+        <li>모바일: 화면 아래 버튼. 조향·가속·부스터를 동시에 누를 수 있습니다.</li>
         <li>CAM 버튼: 회전 카메라(카트 전방이 항상 화면 위, 기본)와 고정 탑다운(북쪽이 위) 중에서 고릅니다. 조향은 어느 쪽이든 카트 기준입니다.</li>
-        <li>빠르게 달리며 Shift를 누른 채 조향하면 드리프트. 옆으로 미끄러지는 동안 부스터 게이지가 찹니다.</li>
+        <li>조향은 부드럽게 꺾이고 손을 떼면 바로 똑바로 돌아옵니다. 빠르게 달리며 한쪽으로 0.25초 이상 계속 꺾으면 자동으로 드리프트하고, 옆으로 미끄러지는 동안 부스터 게이지가 찹니다. 조향을 풀면 드리프트가 끝납니다.</li>
         <li>게이지가 가득 차면 Space(BOOST)로 2초 동안 최고 속도가 약 30% 빨라집니다.</li>
         <li>? 상자를 지나면 순위에 따라 아이템을 하나 얻습니다. 아이템은 한 번에 하나만 가질 수 있습니다.</li>
         <li>체크포인트를 순서대로 지나야 바퀴가 인정됩니다. 막히거나 코스를 벗어나면 마지막 체크포인트로 돌아갑니다.</li>
@@ -306,7 +306,7 @@ function RaceView({ game }: { game: KartGameApi }) {
         </div>
         <TouchControls game={game} />
         <p className="hidden font-sans text-xs text-slate-500 pointer-fine:block">
-          W/↑ 가속 · S/↓ 브레이크 · A D/← → 조향 · Shift 드리프트 · Space 부스터 · E 아이템 · P/Esc 일시정지
+          W/↑ 가속 · S/↓ 브레이크 · A D/← → 조향(빠르게 계속 꺾으면 자동 드리프트) · Space 부스터 · E 아이템 · P/Esc 일시정지
         </p>
         {hud.paused && <PauseMenu game={game} />}
         {hud.phase === "finished" && <Results game={game} />}
@@ -396,7 +396,8 @@ function Results({ game }: { game: KartGameApi }) {
 }
 
 /**
- * 터치 기기 전용 버튼. 버튼마다 포인터를 따로 잡으므로 조향 + 가속 + 드리프트를 동시에 누를 수 있다(멀티터치).
+ * 터치 기기 전용 버튼. 버튼마다 포인터를 따로 잡으므로 조향 + 가속 + 부스터를 동시에 누를 수 있다(멀티터치).
+ * 드리프트는 자동이라 버튼이 없다. 조향 버튼도 키보드와 같은 InputState(-1·0·1)를 쓰므로 주행 감각이 같다.
  * 페이지 스크롤·확대가 되지 않도록 touch-none을 쓴다.
  */
 function TouchControls({ game }: { game: KartGameApi }) {
@@ -423,7 +424,7 @@ function TouchControls({ game }: { game: KartGameApi }) {
   });
   const base = "flex items-center justify-center rounded-xl border-2 select-none touch-none active:translate-y-px";
   const steerBtn = `${base} h-full min-h-28 w-16 border-sky-300/60 bg-slate-800 text-2xl text-sky-100 active:bg-sky-900 min-[380px]:w-20`;
-  const small = `${base} h-12 w-[3.6rem] text-[8px] min-[380px]:w-16`;
+  const small = `${base} h-14 w-[3.6rem] text-[8px] min-[380px]:w-16`;
   return (
     <div className="hidden touch-none items-stretch justify-between gap-2 pointer-coarse:flex" aria-label="터치 조작">
       <div className="flex gap-1.5">
@@ -441,14 +442,11 @@ function TouchControls({ game }: { game: KartGameApi }) {
         <button type="button" aria-label="부스터" className={`${small} ${hud.boostReady ? "border-amber-300 bg-amber-500/30 text-amber-100" : "border-slate-500 bg-slate-800 text-slate-400"}`} {...tap("boost")}>
           BOOST
         </button>
-        <button type="button" aria-label="드리프트 (누르고 조향)" className={`${small} border-violet-300/70 bg-violet-950/60 text-violet-100`} {...hold("t-drift", "drift")}>
-          DRIFT
-        </button>
-        <button type="button" aria-label="가속" className={`${small} row-span-2 h-auto border-emerald-300 bg-emerald-700/50 text-emerald-50`} {...hold("t-gas", "throttle")}>
-          GAS
-        </button>
         <button type="button" aria-label="브레이크·후진" className={`${small} border-rose-300/70 bg-rose-950/60 text-rose-100`} {...hold("t-brake", "brake")}>
           BRAKE
+        </button>
+        <button type="button" aria-label="가속" className={`${small} border-emerald-300 bg-emerald-700/50 text-emerald-50`} {...hold("t-gas", "throttle")}>
+          GAS
         </button>
       </div>
     </div>

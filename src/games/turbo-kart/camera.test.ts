@@ -3,6 +3,7 @@ import { describe, test } from "node:test";
 import { Camera, CAMERA } from "./camera";
 import { createRace, PLAYER, stepRace } from "./logic/game";
 import { NO_INPUT } from "./logic/physics";
+import { STEERING } from "./config";
 
 const W = 390;
 const H = 488;
@@ -120,4 +121,80 @@ describe("고정 카메라 (topdown)와 공통", () => {
     cam.update(kart, DT);
     assert.ok(Math.abs(cam.heading - 0.5) < 1e-9);
   });
+
 });
+
+describe("카메라 안정화 (조향 개선)", () => {
+  const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+
+  /** 카트가 rate(rad/s)로 duration초 돌다가 멈춘 뒤 settle초 동안, frameDt 간격으로 카메라를 갱신한다 */
+  function follow(frameDt: number, rate: number, duration: number, settle: number) {
+    const cam = new Camera("chase");
+    const kart = kartAt(0);
+    cam.update(kart, frameDt);
+    let maxLag = 0;
+    let t = 0;
+    while (t < duration - 1e-9) {
+      kart.heading += rate * frameDt;
+      cam.update(kart, frameDt);
+      maxLag = Math.max(maxLag, Math.abs(wrap(kart.heading - cam.heading)));
+      t += frameDt;
+    }
+    const stopAt = cam.heading;
+    let afterHalf = cam.heading;
+    for (let u = 0; u < settle - 1e-9; u += frameDt) {
+      cam.update(kart, frameDt);
+      if (u < 0.5) afterHalf = cam.heading;
+    }
+    return { cam, kart, maxLag, stopAt, afterHalf };
+  }
+
+  test("카트가 가장 빨리 돌아도 화면이 크게 뒤처지지 않고, 카트가 멈추면 0.5초 안에 화면도 멈춘다", () => {
+    const r = follow(DT, STEERING.yawCap, 1, 1.5);
+    assert.ok(r.maxLag < 0.6, `최대 지연 ${r.maxLag.toFixed(2)} rad`);
+    assert.ok(Math.abs(wrap(r.kart.heading - r.afterHalf)) < 0.03, `0.5초 뒤 남은 차이 ${wrap(r.kart.heading - r.afterHalf).toFixed(3)}`);
+    assert.ok(Math.abs(wrap(r.kart.heading - r.cam.heading)) < 1e-3, "결국 정확히 맞춤");
+    assert.ok(CAMERA.maxTurnSpeed > STEERING.yawCap, "화면 최대 회전 속도가 카트 각속도 상한보다 커야 뒤처져 계속 돌지 않는다");
+  });
+
+  test("순간적인 방향 흔들림(0.05초)에는 화면이 조금만 반응한다", () => {
+    const cam = new Camera("chase");
+    const kart = kartAt(0);
+    cam.update(kart, DT);
+    kart.heading = 0.3;
+    for (let i = 0; i < 3; i++) cam.update(kart, DT);
+    kart.heading = 0;
+    let peak = 0;
+    for (let i = 0; i < 60; i++) {
+      cam.update(kart, DT);
+      peak = Math.max(peak, Math.abs(cam.heading));
+    }
+    assert.ok(peak < 0.12, `흔들림이 화면에 전해진 양 ${peak.toFixed(3)}`);
+  });
+
+  test("30·60·120FPS에서 같은 움직임이면 화면 회전도 거의 같다", () => {
+    const results = [1 / 30, 1 / 60, 1 / 120].map((dt) => follow(dt, 2, 0.6, 0.3).cam.heading);
+    for (const h of results) assert.ok(Math.abs(wrap(h - results[1])) < 0.03, `${results.map((x) => x.toFixed(3)).join(" / ")}`);
+  });
+
+  test("±180° 경계를 넘어 돌아도 짧은 쪽으로 따라간다", () => {
+    const cam = new Camera("chase");
+    const kart = kartAt(Math.PI - 0.05);
+    cam.update(kart, DT);
+    for (let i = 0; i < 30; i++) {
+      kart.heading = wrap(kart.heading + 2 * DT);
+      cam.update(kart, DT);
+      assert.ok(Math.abs(wrap(kart.heading - cam.heading)) < 0.5, "반대쪽으로 한 바퀴 돌지 않음");
+    }
+  });
+
+  test("드리프트 중에는 차체와 진행 방향의 가운데를 따라가 차체가 옆으로 돌아가도 덜 흔들린다", () => {
+    const cam = new Camera("chase");
+    const kart = kartAt(0);
+    cam.update(kart, DT);
+    Object.assign(kart, { heading: 0.4, vx: 300, vy: 0, drifting: true });
+    for (let i = 0; i < 120; i++) cam.update(kart, DT);
+    assert.ok(Math.abs(cam.heading - 0.2) < 0.01, `${cam.heading}`);
+  });
+});
+

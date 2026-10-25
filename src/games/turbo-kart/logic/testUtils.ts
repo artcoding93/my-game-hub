@@ -34,4 +34,15 @@ export function drive(kart: Kart, env: DriveEnv, inp: DriveInput, seconds: numbe
   return events;
 }
 
+/**
+ * 벽 없이 물리만 진행 (조향·드리프트 감각 검사용). 위치는 출발 직선에 그대로 두고 속도·방향·상태만 진행하므로
+ * 좁은 도로에서 원을 그려도 벽이나 갓길에 닿지 않는다.
+ */
+export function driveFree(kart: Kart, env: DriveEnv, inp: DriveInput, seconds: number): RaceEvent[] {
+  const events: RaceEvent[] = [];
+  const steps = Math.round(seconds / DT);
+  for (let i = 0; i < steps; i++) driveKart(kart, inp, env, DT, events);
+  return events;
+}
+
 export const speed = (k: Kart) => Math.hypot(k.vx, k.vy);

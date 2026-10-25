@@ -4,7 +4,9 @@ import type { Kart } from "./types";
  * Turbo Kart 카메라 (그리기 전용, 순수 계산). 카트의 물리 좌표·속도·충돌에는 관여하지 않는다.
  *
  * - chase(회전, 기본): 카트를 화면 아래쪽 가운데(높이의 anchorY 지점)에 두고, 카트 전방이 항상 화면 위를 향하도록
- *   월드를 반대로 돌려 그린다. 회전은 지수 보간 + 최대 회전 속도 제한으로 천천히 따라가 멀미를 줄이고,
+ *   월드를 반대로 돌려 그린다. 회전은 최단 각도 차이(±180° 경계 처리)로 지수 보간 + 최대 회전 속도 제한.
+ *   최대 회전 속도는 카트 각속도 상한(STEERING.yawCap)보다 커서, 조향을 풀면 카메라도 곧 멈춘다(카트가 멈췄는데 화면만 계속 도는 일 없음).
+ *   드리프트 중에는 차체 방향과 실제 진행 방향의 가운데를 따라가 차체가 옆으로 흔들려도 화면은 덜 흔들린다.
  *   미끄러짐(스핀) 중에는 회전을 멈춘다.
  * - topdown(고정): 북쪽(월드 -y)이 항상 위. 카트를 따라가며 진행 방향 앞쪽을 조금 더 보여 준다(Look-Ahead).
  *
@@ -18,10 +20,12 @@ export const CAMERA = {
   viewShortSide: 600,
   /** chase: 카트가 놓이는 화면 높이 비율 (위에서부터) */
   anchorY: 0.72,
-  /** chase: 회전이 카트 방향을 따라가는 속도 (초당 감쇠율). 낮을수록 부드럽고 느리다 */
-  turnFollow: 3.2,
-  /** chase: 화면이 돌 수 있는 최대 각속도 (rad/s) */
-  maxTurnSpeed: 2.4,
+  /** chase: 회전이 카트 방향을 따라가는 속도 (초당 감쇠율 = 1 / 반응 시간 약 0.16초). 낮을수록 부드럽고 느리다 */
+  turnFollow: 6.25,
+  /** chase: 화면이 돌 수 있는 최대 각속도 (rad/s). 카트 각속도 상한(3)보다 조금 커야 뒤처져 계속 돌지 않는다 */
+  maxTurnSpeed: 3.4,
+  /** chase: 드리프트 중 진행 방향(속도 벡터) 쪽으로 섞는 비율 */
+  driftVelocityBlend: 0.5,
   /** chase: 위치를 따라가는 속도 */
   positionFollow: 9,
   /** topdown: 앞쪽을 더 보여 주는 시간과 최대 거리 */
@@ -77,7 +81,11 @@ export class Camera {
     this.y += (ty - this.y) * k;
 
     if (this.mode === "chase" && kart.spinTime === 0) {
-      const diff = wrapAngle(kart.heading - this.heading);
+      let target = kart.heading;
+      if (kart.drifting && Math.hypot(kart.vx, kart.vy) > 60) {
+        target += wrapAngle(Math.atan2(kart.vy, kart.vx) - kart.heading) * CAMERA.driftVelocityBlend;
+      }
+      const diff = wrapAngle(target - this.heading);
       let step = diff * (1 - Math.exp(-dt * CAMERA.turnFollow));
       const limit = CAMERA.maxTurnSpeed * dt;
       step = Math.max(-limit, Math.min(limit, step));

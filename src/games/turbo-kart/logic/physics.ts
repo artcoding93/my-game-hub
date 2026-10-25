@@ -1,4 +1,4 @@
-import { BOOSTER, COLLISION, DRIFT, ITEM_FX, KART, SURFACES } from "../config";
+import { BOOSTER, COLLISION, DRIFT, ITEM_FX, KART, STEERING, SURFACES } from "../config";
 import type { Difficulty, DriveInput, Kart, Mover, Obstacle, RaceEvent, Surface } from "../types";
 import { roadAt, surfaceAt, wallContact, type BuiltTrack } from "./track";
 
@@ -7,10 +7,12 @@ import { roadAt, surfaceAt, wallContact, type BuiltTrack } from "./track";
  *
  * 속도는 월드 벡터(vx, vy)로 들고, 매 스텝 진행 방향(전진 성분)과 옆 방향(횡 성분)으로 나눠 처리한다.
  * - 전진: 가속·브레이크·후진·자연 감속·노면 저항, 최고 속도(노면·부스터·아이템 배율, 합산 상한)
- * - 조향: 속도에 비례하는 각속도 (정지 상태에서는 돌지 않음)
+ * - 조향: 입력 → 조향값(시간 기반 이동) → 목표 각속도(조향값 × 속도별 최대 각속도) → 실제 각속도(지수 보간) → heading.
+ *   정지 상태에서는 돌지 않고, 빠를수록 최대 각속도가 줄며, 조향을 풀면 각속도가 0으로 감쇠한다(스핀 방지, config의 STEERING).
  * - 횡: 접지력만큼 지수 감쇠 → 접지력이 낮을수록(드리프트·얼음) 옆으로 미끄러진다
- * - 드리프트: 일정 속도 이상 + 조향 + 드리프트 입력. 회전 반경이 줄고 접지력이 낮아지며,
- *   실제로 옆으로 미끄러질 때만 부스터 게이지가 찬다(직선에서 버튼만 눌러서는 차지 않음, 벽 충돌 후 잠시 중단)
+ * - 자동 드리프트: 빠른 속도에서 강한 조향을 잠시 유지하면 시작하고, 조향을 풀면 끝난다(히스테리시스, config의 DRIFT).
+ *   접지력이 낮아지고 목표 각속도가 조금(yawScale) 커지지만 각속도 상한은 그대로이며,
+ *   실제로 옆으로 미끄러질 때만 부스터 게이지가 찬다(벽 충돌 후 잠시 중단)
  */
 
 export interface DriveEnv {
@@ -20,7 +22,7 @@ export interface DriveEnv {
   movers: readonly Mover[];
 }
 
-export const NO_INPUT: DriveInput = { throttle: false, brake: false, steer: 0, drift: false, boost: false, item: false };
+export const NO_INPUT: DriveInput = { throttle: false, brake: false, steer: 0, boost: false, item: false };
 
 /** 부스터·아이템이 겹쳐도 합산 상한을 넘지 않는 최고 속도 배율 */
 export function speedScale(kart: Kart): number {
@@ -47,6 +49,58 @@ export function maxSpeedOf(kart: Kart, surface: Surface): number {
 
 export function speedOf(kart: Kart): number {
   return Math.hypot(kart.vx, kart.vy);
+}
+
+/**
+ * 속도별 최대 각속도 (rad/s): refSpeed까지는 속도에 비례(정지 상태에서는 돌지 않음), 그보다 빠르면 점점 줄어든다.
+ * 부스터·Turbo Boost 중에는 조금 더 줄여 고속에서 급하게 돌지 않게 한다.
+ */
+export function yawLimit(kart: Kart, forwardSpeed: number): number {
+  const v = Math.abs(forwardSpeed);
+  const low = Math.min(1, v / STEERING.refSpeed);
+  const high = 1 / (1 + (STEERING.highSpeedFalloff * Math.max(0, v - STEERING.refSpeed)) / KART.maxSpeed);
+  const boosting = kart.boostTime > 0 || kart.turboTime > 0;
+  return STEERING.maxYaw * low * high * (boosting ? STEERING.boostYawScale : 1);
+}
+
+/** 조향값을 입력 쪽으로 시간 기반으로 옮긴다: 같은 방향은 rampTime, 중립 복귀는 releaseTime, 반대 방향 전환은 reverseTime */
+export function approachSteer(current: number, target: number, dt: number): number {
+  if (current === target) return current;
+  let rate: number;
+  if (current !== 0 && target !== 0 && Math.sign(current) !== Math.sign(target)) rate = 2 / STEERING.reverseTime;
+  else if (Math.abs(target) < Math.abs(current)) rate = 1 / STEERING.releaseTime;
+  else rate = 1 / STEERING.rampTime;
+  const step = rate * dt;
+  return current < target ? Math.min(target, current + step) : Math.max(target, current - step);
+}
+
+/** 자동 드리프트 시작·유지·종료 판정 */
+function updateDrift(kart: Kart, steerInput: number, forwardSpeed: number, dt: number) {
+  if (kart.spinTime > 0 || forwardSpeed < KART.maxSpeed * DRIFT.exitSpeedRatio) {
+    kart.drifting = false;
+    kart.driftHold = 0;
+    kart.driftRelease = 0;
+    return;
+  }
+  if (!kart.drifting) {
+    const strong =
+      Math.abs(kart.steerValue) >= DRIFT.enterSteer && Math.sign(steerInput) === Math.sign(kart.steerValue) && forwardSpeed >= KART.maxSpeed * DRIFT.minSpeedRatio;
+    // 같은 방향으로 계속 꺾고 있을 때만 쌓인다 (벽에 부딪힌 직후에는 시작하지 않음)
+    kart.driftHold = strong && kart.wallTime === 0 ? kart.driftHold + dt : 0;
+    if (kart.driftHold >= DRIFT.enterTime) {
+      kart.drifting = true;
+      kart.driftDir = Math.sign(kart.steerValue);
+      kart.driftRelease = 0;
+    }
+    return;
+  }
+  // 드리프트 방향으로 충분히 꺾고 있으면 유지, 풀거나 반대로 꺾은 상태가 exitTime 이어지면 종료
+  kart.driftRelease = kart.steerValue * kart.driftDir >= DRIFT.releaseSteer ? 0 : kart.driftRelease + dt;
+  if (kart.driftRelease >= DRIFT.exitTime) {
+    kart.drifting = false;
+    kart.driftHold = 0;
+    kart.driftRelease = 0;
+  }
 }
 
 /** 부스터 게이지가 가득 차 있고 쿨다운이 끝났으면 2초 부스터 */
@@ -88,6 +142,8 @@ export function driveKart(kart: Kart, input: DriveInput, env: DriveEnv, dt: numb
     kart.vy = 0;
     kart.drifting = false;
     kart.driftCharging = false;
+    kart.steerValue = 0;
+    kart.yawRate = 0;
     return;
   }
   if (input.boost) tryBoost(kart, events);
@@ -95,22 +151,33 @@ export function driveKart(kart: Kart, input: DriveInput, env: DriveEnv, dt: numb
   let fx = Math.cos(kart.heading);
   let fy = Math.sin(kart.heading);
   const vF0 = kart.vx * fx + kart.vy * fy;
-  const steer = kart.spinTime > 0 ? 0 : Math.max(-1, Math.min(1, input.steer));
 
-  // 드리프트 시작·유지 조건
-  const fastEnough = vF0 >= KART.maxSpeed * DRIFT.minSpeedRatio;
-  if (!kart.drifting && input.drift && steer !== 0 && fastEnough && kart.spinTime === 0) {
-    kart.drifting = true;
-    kart.driftDir = Math.sign(steer);
+  if (kart.spinTime > 0) {
+    // 오일·로켓에 맞은 미끄러짐 (아이템 규칙): 정해진 시간 동안만 돌고, 끝나면 남은 회전 없이 바로 조작이 돌아온다
+    kart.heading += 9 * (kart.index % 2 ? 1 : -1) * Math.min(1, kart.spinTime) * dt;
+    kart.steerValue = 0;
+    kart.yawRate = 0;
+    updateDrift(kart, 0, vF0, dt);
+  } else {
+    const steerInput = Math.max(-1, Math.min(1, input.steer));
+    kart.steerValue = approachSteer(kart.steerValue, steerInput, dt);
+    updateDrift(kart, steerInput, vF0, dt);
+    // 목표 각속도: 조향값 × 속도별 최대 각속도 (후진하면 반대). 조향을 풀면 목표가 0이 되어 회전이 멈춘다
+    const reverse = vF0 < 0 ? -1 : 1;
+    let target = kart.steerValue * yawLimit(kart, vF0) * (kart.drifting ? DRIFT.yawScale : 1) * reverse;
+    // 스핀 방지: 차체가 진행 방향보다 많이 돌아가 있을수록 그쪽 회전을 줄이고, maxSlipAngle에서 멈춘다 (반대쪽 조향은 그대로)
+    const speedNow = Math.hypot(kart.vx, kart.vy);
+    if (speedNow > 60 && vF0 > 0) {
+      const slip = Math.atan2(Math.sin(kart.heading - Math.atan2(kart.vy, kart.vx)), Math.cos(kart.heading - Math.atan2(kart.vy, kart.vx)));
+      if (Math.sign(target) === Math.sign(slip)) target *= Math.max(0, Math.min(1, (STEERING.maxSlipAngle - Math.abs(slip)) / STEERING.slipFade));
+    }
+    const boosting = kart.boostTime > 0 || kart.turboTime > 0;
+    const unwinding = Math.abs(target) < Math.abs(kart.yawRate) || Math.sign(target) !== Math.sign(kart.yawRate);
+    const response = unwinding ? STEERING.yawRelease : boosting ? STEERING.boostYawResponse : STEERING.yawResponse;
+    kart.yawRate += (target - kart.yawRate) * (1 - Math.exp(-dt / response));
+    kart.yawRate = Math.max(-STEERING.yawCap, Math.min(STEERING.yawCap, kart.yawRate));
+    kart.heading += kart.yawRate * dt;
   }
-  if (kart.drifting && (!input.drift || vF0 < KART.maxSpeed * DRIFT.minSpeedRatio * 0.7 || kart.spinTime > 0)) kart.drifting = false;
-
-  // 조향 (속도 비례). 드리프트 중에는 드리프트 방향으로 계속 돌고, 조향으로 각도를 조절한다.
-  const speedFactor = Math.min(1, Math.abs(vF0) / KART.turnRefSpeed) * Math.sign(vF0 || 1);
-  let turn = steer * KART.turnRate * speedFactor;
-  if (kart.drifting) turn = (kart.driftDir * 0.55 + steer * 0.45) * KART.turnRate * KART.driftTurnScale * speedFactor;
-  if (kart.spinTime > 0) turn = 9 * (kart.index % 2 ? 1 : -1) * Math.min(1, kart.spinTime);
-  kart.heading += turn * dt;
 
   fx = Math.cos(kart.heading);
   fy = Math.sin(kart.heading);
@@ -135,7 +202,14 @@ export function driveKart(kart: Kart, input: DriveInput, env: DriveEnv, dt: numb
   let grip = KART.grip * surf.grip;
   if (kart.drifting) grip = Math.min(grip, KART.driftGrip);
   if (kart.spinTime > 0) grip = 0.8;
+  const lateralBefore = Math.abs(vR);
   vR *= Math.exp(-grip * dt);
+  // 드리프트: 옆으로 미끄러지며 잃은 속도 일부를 앞으로 돌려 준다 (최고 속도는 넘지 않음)
+  // (전체 속도가 최고 속도를 넘지 않는 만큼만)
+  if (kart.drifting && vF > 0) {
+    const room = Math.sqrt(Math.max(0, maxSpeed * maxSpeed - vR * vR));
+    if (vF < room) vF = Math.min(room, vF + (lateralBefore - Math.abs(vR)) * DRIFT.slipTransfer);
+  }
 
   kart.vx = fx * vF + rx * vR;
   kart.vy = fy * vF + ry * vR;
@@ -165,10 +239,15 @@ export function moveKart(kart: Kart, env: DriveEnv, dt: number, events: RaceEven
       const keep = vn > 80 ? COLLISION.wallKeep : 1;
       kart.vx *= keep;
       kart.vy *= keep;
-      if (vn > 80) events.push({ type: "wall", kart: kart.index, speed: vn });
+      if (vn > 80) {
+        events.push({ type: "wall", kart: kart.index, speed: vn });
+        // 세게 부딪혔을 때만 남은 회전을 줄인다 (스치며 벽에서 빠져나오는 조향은 막지 않음)
+        kart.yawRate *= STEERING.collisionYawKeep;
+      }
     }
     kart.wallTime = DRIFT.wallPause;
     kart.drifting = false;
+    kart.driftHold = 0;
   }
 
   const bump = (ox: number, oy: number, r: number) => {
@@ -189,7 +268,11 @@ export function moveKart(kart: Kart, env: DriveEnv, dt: number, events: RaceEven
       kart.vy *= COLLISION.wallKeep;
       kart.wallTime = DRIFT.wallPause;
       kart.drifting = false;
-      if (vn < -60) events.push({ type: "obstacle", kart: kart.index, x: ox, y: oy });
+      kart.driftHold = 0;
+      if (vn < -60) {
+        events.push({ type: "obstacle", kart: kart.index, x: ox, y: oy });
+        kart.yawRate *= STEERING.collisionYawKeep;
+      }
     }
   };
   for (const o of env.obstacles) bump(o.x, o.y, o.r);
