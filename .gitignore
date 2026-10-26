@@ -39,3 +39,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs & temp files
+*.log
+*.tmp
+*.swp
+*~
+
+# editors & OS
+.vscode/
+.idea/
+Thumbs.db
+
+# tool caches & test results
+.eslintcache
+/test-results/
+/playwright-report/
+
+# Claude Code local settings
+.claude/settings.local.json
