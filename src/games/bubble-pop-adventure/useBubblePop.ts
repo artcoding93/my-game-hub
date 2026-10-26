@@ -174,7 +174,10 @@ export function useBubblePop(rootRef: RefObject<HTMLElement | null>, canvasRef: 
       if ((event.code === "KeyP" || event.code === "Escape") && !event.repeat) {
         event.preventDefault();
         togglePause();
+        return;
       }
+      // ↓는 게임 동작이 없지만 게임 중 페이지가 스크롤되지 않도록 막는다 (←→↑·Space는 위에서 이미 막음)
+      if (event.code === "ArrowDown") event.preventDefault();
     }
     function handleKeyUp(event: KeyboardEvent) {
       if (KEY_TO_ACTION[event.code]) input.release(event.code);

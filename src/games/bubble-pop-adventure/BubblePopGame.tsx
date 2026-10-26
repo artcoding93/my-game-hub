@@ -3,7 +3,7 @@
 import { useRef, type PointerEvent, type ReactNode } from "react";
 import { arcadeFont } from "@/lib/fonts";
 import { SCREEN_H, SCREEN_W } from "./config";
-import type { Action } from "./input";
+import { CONTROL_HINTS, type Action } from "./input";
 import { STAGES } from "./stages";
 import { useBubblePop, type BubbleApi } from "./useBubblePop";
 
@@ -54,7 +54,8 @@ function blurAfter(fn: () => void) {
 }
 
 function Panel({ children }: { children: ReactNode }) {
-  return <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0e0a28]/70 p-3 text-center">{children}</div>;
+  // 작은 화면에서 내용이 넘치면 위가 잘리지 않고 스크롤된다
+  return <div className="absolute inset-0 flex flex-col items-center justify-center-safe gap-3 overflow-y-auto bg-[#0e0a28]/70 p-3 text-center">{children}</div>;
 }
 
 function Overlay({ game }: { game: BubbleApi }) {
@@ -94,6 +95,7 @@ function Overlay({ game }: { game: BubbleApi }) {
     return (
       <Panel>
         <p className="text-base text-cyan-100 sm:text-xl">PAUSE</p>
+        <Controls className={KEYBOARD_ONLY} />
         <div className="flex flex-wrap justify-center gap-2">
           <button type="button" className={primary} onClick={blurAfter(game.togglePause)}>
             계속하기
@@ -158,16 +160,38 @@ function Title({ game }: { game: BubbleApi }) {
           게임 방법
         </button>
       </div>
+      <Controls className={KEYBOARD_ONLY} />
       <p className="font-sans text-[11px] text-slate-400">최고 점수 {game.best.toLocaleString()}</p>
     </Panel>
+  );
+}
+
+/** 키보드 안내는 마우스·키보드 기기에서만 보인다 (터치 기기는 화면 아래 버튼을 쓴다) */
+const KEYBOARD_ONLY = "hidden pointer-fine:grid";
+
+/** 키보드 안내 (타이틀·게임 방법·일시정지 화면 공용). 문구는 input.ts의 CONTROL_HINTS 하나에서만 관리한다 */
+function Controls({ className = "grid" }: { className?: string }) {
+  return (
+    <div className={`${className} gap-1 rounded-lg border border-cyan-300/30 bg-[#0e0a28]/60 px-3 py-2 text-[8px] sm:text-[10px]`} aria-label="키보드 조작">
+      <p className="text-amber-200">CONTROLS</p>
+      <dl className="grid grid-cols-[auto_auto] gap-x-3 gap-y-1 text-left">
+        {CONTROL_HINTS.map((c) => (
+          <div key={c.keys} className="contents">
+            <dt className="text-cyan-100">{c.keys}</dt>
+            <dd className="text-slate-200">: {c.action}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
 function HowTo({ game }: { game: BubbleApi }) {
   return (
     <Panel>
+      <Controls className={KEYBOARD_ONLY} />
       <ul className="max-w-lg list-disc space-y-1 pl-5 text-left font-sans text-[11px] leading-5 text-slate-200 sm:text-sm">
-        <li>PC: ←→/AD 이동, Space 점프, Z·J 방울 발사, P·Esc 일시정지</li>
+        <li>모바일: 화면 아래 ◀ ▶ · BUBBLE · JUMP 버튼을 동시에 누를 수 있습니다.</li>
         <li>날아가는 방울에 닿은 적은 방울에 갇혀 천천히 떠오릅니다. 몸으로 닿으면 톡! 터집니다.</li>
         <li>붙어 있는 방울은 함께 터지고, 이어서 없앤 적 수만큼 콤보 점수가 두 배씩 올라갑니다.</li>
         <li>점프 키를 누른 채 방울 위에 떨어지면 터지지 않고 튕겨 올라요. 높은 곳에 갈 때 쓰세요.</li>

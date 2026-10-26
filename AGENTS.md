@@ -256,6 +256,8 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - `stage.gather`는 플레이어가 발판에서 뛰어 닿을 수 있는 곳 위에 둔다(`reach.test.ts`가 검사). 보스 Chime Queen은 방울에 갇히지 않고, 갇힌 적을 터뜨릴 때 나오는 별빛 조각(`sparks`)으로만 맞는다.
 - 지도·적 배치·gather를 바꾸면 `npm run test:bubble-pop-adventure`를 돌린다(실제 점프 물리로 모든 발판·적·모이는 지점 도달, 자동 플레이로 5스테이지 클리어).
 - 난수는 `GameState.rng`(시드)만 쓴다. `Math.random()`은 renderer 연출과 시드 생성에만 쓴다. 화면 흔들림은 상태가 요청만 하고 렌더러가 설정에 따라 적용한다.
+- 키보드: ←→ 이동, ↑·Z 점프, Space·X 발사, P·Esc 일시정지 (`input.ts`의 `KEY_TO_ACTION`, 화면 안내는 같은 파일의 `CONTROL_HINTS` 하나로 관리).
+  점프는 새로 누를 때만(키 반복·두 키 동시 입력은 한 번), 발사 쿨다운은 하나. Jump Buffer·Coyote Time은 config의 `PLAYER.jumpBuffer`·`coyote`. 키를 바꾸면 `controls.test.ts`를 확인한다.
 - 저장: `my-game-hub:bubble-pop-adventure:high-score`, `:checkpoint`, `:sound`, `:music`, `:shake`. 효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__BUBBLE_POP__` 노출.
 - 저작권: 1980년대 오락실 방울 포획 플랫폼 장르의 일반 규칙만 참고했다. 별빛 정령 Lumi·기계 요정·Chime Queen·배경(`render/`), 스테이지 배치, BGM 2곡과 효과음은 모두 자체 제작이며 외부 에셋이 없다.
   다른 게임의 이름·캐릭터·스테이지·음악을 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다. "Bubble Pop Adventure"는 가칭이므로 정식 공개 전 상표 중복을 확인한다.

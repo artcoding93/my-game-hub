@@ -25,8 +25,10 @@ export const PLAYER = {
   speed: 74,
   accel: 900,
   jumpVelocity: 380,
-  coyote: 0.08,
-  jumpBuffer: 0.1,
+  /** Coyote Time: 발판 끝에서 떨어진 직후에도 점프할 수 있는 시간 */
+  coyote: 0.1,
+  /** Jump Buffer: 착지 직전에 누른 점프를 기억했다가 착지하면 뛰는 시간 */
+  jumpBuffer: 0.12,
   lives: 3,
   maxLives: 5,
   /** 피격 후 무적 */
