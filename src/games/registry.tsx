@@ -79,6 +79,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: () => <GameLoading shape="board" />,
   }),
+  // Cascade Rush도 Canvas 2D만 쓴다(Phaser 미사용).
+  "cascade-rush": dynamic(() => import("./cascade-rush"), {
+    ssr: false,
+    loading: () => <GameLoading shape="board" />,
+  }),
 };
 
 export function GameLoader({ slug }: { slug: GameSlug }) {

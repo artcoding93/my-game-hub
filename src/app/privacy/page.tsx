@@ -34,7 +34,8 @@ export const metadata: Metadata = {
  *       my-game-hub:turbo-kart:sound, :music, :camera — 회전/고정 카메라 선택),
  *       Frosty Roll (my-game-hub:frosty-roll:high-score, :checkpoint — 고급 구간 시작 해금 여부, :sound, :music, :shake — 화면 흔들림, :easy-push — 간편 조작),
  *       Bubble Pop Adventure (my-game-hub:bubble-pop-adventure:high-score, :checkpoint — 고급 구간 시작 해금 여부, :sound, :music, :shake — 화면 흔들림),
- *       Cargo Bot (my-game-hub:cargo-bot:progress — 스테이지별 최소 이동·밀기 기록·별 평가·마지막 스테이지·진행 중인 퍼즐 상태, :sound, :music, :volume)
+ *       Cargo Bot (my-game-hub:cargo-bot:progress — 스테이지별 최소 이동·밀기 기록·별 평가·마지막 스테이지·진행 중인 퍼즐 상태, :sound, :music, :volume),
+ *       Cascade Rush (my-game-hub:cascade-rush:records — 모드별 최고 점수·최대 연쇄·제거한 크리스털 수, :sound, :music, :shake — 화면 흔들림)
  *   - 방문 통계: Vercel Web Analytics (쿠키 없음, src/app/layout.tsx의 <Analytics />)
  *   - 쿠키·광고·Google Analytics: 사용하지 않음 (Google AdSense는 도입 예정 — 본문 3번에 "도입 예정"으로 구분 표기)
  *   - 외부 API 호출: 없음. 글꼴(next/font)은 빌드 시 내려받아 이 사이트에서 제공한다. 문의 입력 양식 없음(이메일만).
@@ -148,6 +149,10 @@ export default function PrivacyPage() {
         <li>
           Cargo Bot: 스테이지별 최소 이동·밀기 기록과 별 평가, 마지막으로 플레이한 스테이지, 이어하기용 진행 중인 퍼즐 상태(로봇·상자
           위치와 이동 수), 효과음·배경음악 켜기/끄기와 음량 설정
+        </li>
+        <li>
+          Cascade Rush: Rush·Endless 모드별 최고 점수, 최대 연쇄 수, 제거한 크리스털 수(숫자), 효과음·배경음악 켜기/끄기 설정, 화면
+          흔들림 세기 설정
         </li>
       </ul>
       <p>

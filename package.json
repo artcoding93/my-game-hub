@@ -15,6 +15,7 @@
     "test:frosty-roll": "node --import ./scripts/ts-test-hooks.mjs --test src/games/frosty-roll/logic/*.test.ts src/games/frosty-roll/audio/*.test.ts",
     "test:bubble-pop-adventure": "node --import ./scripts/ts-test-hooks.mjs --test src/games/bubble-pop-adventure/*.test.ts src/games/bubble-pop-adventure/logic/*.test.ts src/games/bubble-pop-adventure/audio/*.test.ts",
     "test:cargo-bot": "node --import ./scripts/ts-test-hooks.mjs --test src/games/cargo-bot/*.test.ts src/games/cargo-bot/logic/*.test.ts src/games/cargo-bot/audio/*.test.ts",
+    "test:cascade-rush": "node --import ./scripts/ts-test-hooks.mjs --test src/games/cascade-rush/*.test.ts src/games/cascade-rush/logic/*.test.ts src/games/cascade-rush/audio/*.test.ts",
     "test:snake-classic": "node --import ./scripts/ts-test-hooks.mjs --test src/games/snake-classic/*.test.ts",
     "test:audio": "node --import ./scripts/ts-test-hooks.mjs --test src/lib/audio/*.test.ts",
     "test:winter-blocks": "node --import ./scripts/ts-test-hooks.mjs --test src/games/winter-blocks/logic/*.test.ts src/games/winter-blocks/audio/*.test.ts"
