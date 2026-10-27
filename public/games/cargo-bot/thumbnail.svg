@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" shape-rendering="crispEdges">
+  <rect width="320" height="180" fill="#0b0f1c"/>
+  <!-- 창고 바닥 격자 -->
+  <g fill="#2b3245">
+    <rect x="16" y="56" width="288" height="112"/>
+  </g>
+  <g fill="#1d2232">
+    <rect x="16" y="83" width="288" height="1"/><rect x="16" y="111" width="288" height="1"/><rect x="16" y="139" width="288" height="1"/>
+    <rect x="44" y="56" width="1" height="112"/><rect x="72" y="56" width="1" height="112"/><rect x="100" y="56" width="1" height="112"/>
+    <rect x="128" y="56" width="1" height="112"/><rect x="156" y="56" width="1" height="112"/><rect x="184" y="56" width="1" height="112"/>
+    <rect x="212" y="56" width="1" height="112"/><rect x="240" y="56" width="1" height="112"/><rect x="268" y="56" width="1" height="112"/>
+  </g>
+  <!-- 벽 -->
+  <rect x="0" y="44" width="320" height="12" fill="#4a5368"/><rect x="0" y="44" width="320" height="3" fill="#7c879f"/>
+  <rect x="0" y="168" width="320" height="12" fill="#4a5368"/><rect x="0" y="168" width="320" height="3" fill="#7c879f"/>
+  <g fill="#e8a33a"><rect x="8" y="52" width="8" height="2"/><rect x="24" y="52" width="8" height="2"/><rect x="40" y="52" width="8" height="2"/><rect x="272" y="52" width="8" height="2"/><rect x="288" y="52" width="8" height="2"/><rect x="304" y="52" width="8" height="2"/></g>
+  <!-- 컨베이어 -->
+  <rect x="184" y="140" width="112" height="28" fill="#30333d"/>
+  <rect x="184" y="140" width="112" height="3" fill="#8a92a3"/><rect x="184" y="165" width="112" height="3" fill="#8a92a3"/>
+  <g fill="#f0b44a"><path d="M196 147 l8 7 -8 7z"/><path d="M220 147 l8 7 -8 7z"/><path d="M244 147 l8 7 -8 7z"/><path d="M268 147 l8 7 -8 7z"/></g>
+  <!-- 목표 표시등 (꺼짐 / 켜짐) -->
+  <circle cx="114" cy="125" r="10" fill="none" stroke="#c97a1e" stroke-width="3"/><circle cx="114" cy="125" r="4" fill="#ffbe55"/>
+  <!-- 목표 위 금속 상자 (녹색 점등) -->
+  <rect x="160" y="88" width="26" height="26" fill="#8d97aa" stroke="#10131d" stroke-width="2"/>
+  <rect x="160" y="99" width="26" height="4" fill="#4ce07a"/><rect x="169" y="97" width="8" height="8" fill="#a8ffbf"/>
+  <!-- 나무 상자 -->
+  <rect x="104" y="60" width="26" height="26" fill="#b9783e" stroke="#10131d" stroke-width="2"/>
+  <path d="M106 62 L128 84 M128 62 L106 84" stroke="#d89656" stroke-width="2"/>
+  <rect x="104" y="68" width="26" height="2" fill="#8a5428"/><rect x="104" y="77" width="26" height="2" fill="#8a5428"/>
+  <!-- 정비 로봇 -->
+  <g>
+    <rect x="58" y="108" width="10" height="8" fill="#3a3f4d"/><rect x="82" y="108" width="10" height="8" fill="#3a3f4d"/>
+    <rect x="62" y="94" width="26" height="16" fill="#f2c94c"/><rect x="62" y="104" width="26" height="6" fill="#c99a2b"/>
+    <rect x="71" y="97" width="8" height="6" fill="#e0892a"/>
+    <rect x="58" y="72" width="34" height="22" fill="#dfe6f2"/><rect x="58" y="90" width="34" height="4" fill="#a9b4c8"/>
+    <rect x="64" y="77" width="22" height="10" fill="#1b2c3d"/><rect x="67" y="80" width="4" height="4" fill="#45d6ff"/><rect x="79" y="80" width="4" height="4" fill="#45d6ff"/>
+    <rect x="74" y="64" width="2" height="8" fill="#a9b4c8"/><rect x="72" y="60" width="6" height="5" fill="#ff9a3a"/>
+  </g>
+  <!-- 제목 -->
+  <text x="14" y="28" fill="#ffbe55" font-family="monospace" font-weight="bold" font-size="22" letter-spacing="2">CARGO BOT</text>
+  <text x="172" y="28" fill="#9fd3f0" font-family="monospace" font-weight="bold" font-size="11" letter-spacing="2">WAREHOUSE PUZZLE</text>
+</svg>

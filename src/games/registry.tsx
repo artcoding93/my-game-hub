@@ -74,6 +74,11 @@ const gameComponents: Record<GameSlug, ComponentType> = {
     ssr: false,
     loading: () => <GameLoading shape="battle" />,
   }),
+  // Cargo Bot도 Canvas 2D만 쓴다(Phaser 미사용).
+  "cargo-bot": dynamic(() => import("./cargo-bot"), {
+    ssr: false,
+    loading: () => <GameLoading shape="board" />,
+  }),
 };
 
 export function GameLoader({ slug }: { slug: GameSlug }) {

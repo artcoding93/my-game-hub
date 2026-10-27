@@ -16,7 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Next.js 16 (App Router, Turbopack) · React 19 · TypeScript (strict)
 - Tailwind CSS v4 (`src/app/globals.css`의 `@import "tailwindcss"`)
-- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart·Frosty Roll·Bubble Pop Adventure는 Canvas 2D를 직접 사용한다.
+- Phaser 3.90.0 (Gold Escape·Star Vanguard·Lost Relic 렌더링 전용, 정확한 버전 고정). Snake·Winter Blocks·Cannon Rivals·Turbo Kart·Frosty Roll·Bubble Pop Adventure·Cargo Bot은 Canvas 2D를 직접 사용한다.
 - `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true` — 변경하지 않는다.
 
 ## 명령어
@@ -35,6 +35,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run test:turbo-kart` | Turbo Kart 자동화 테스트 (차량 물리·트랙 검증·랩/순위·아이템·기록·BGM, AI 4대 완주 시뮬레이션 9개 조합). `TURBO_SIM=full`이면 조합마다 5회 |
 | `npm run test:frosty-roll` | Frosty Roll 자동화 테스트 (눈 누적·연쇄·낙하·동시 굴림·탈출·보스·아이템 제한·적 안정성, 실제 점프 물리 도달 가능성, 자동 플레이로 5스테이지 클리어, 사운드) |
 | `npm run test:bubble-pop-adventure` | Bubble Pop Adventure 자동화 테스트 (방울 발사·포획·상승·천장 모임·바람, 연쇄 터짐·콤보, 방울 밟기, 아이템·Time Freeze, 보스, 적 안정성, 실제 점프 물리로 발판·적·모이는 지점 도달, 자동 플레이로 5스테이지 클리어, 사운드) |
+| `npm run test:cargo-bot` | Cargo Bot 자동화 테스트 (이동·밀기 규칙, 컨베이어·얼음·순간이동·우선순위·무한 루프 방지, Undo/Redo/Restart·빠른 입력, 15개 스테이지 상태 공간 탐색 검증·해답 재생·기믹 필요성, 힌트, 저장, 입력 반복, 사운드) |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -117,6 +118,10 @@ src/
       render/                # pixels(픽셀 격자·자동 외곽선), sprites(Lumi·기계 요정·Chime Queen·방울·아이템), scenery(배경·타일), renderer
       audio/                 # sfx(효과음), music(BGM 2곡), BubbleAudio(이벤트→효과음)
       controller.ts, input.ts, useBubblePop.ts, BubblePopGame.tsx
+    cargo-bot/               # Canvas 2D 창고 상자 밀기 퍼즐 (아래 "Cargo Bot" 참고)
+      stages.ts              # 15개 지도·이름·힌트·검증된 최소 기록(par) / solutions.ts: 개발용 검증 해답(LURD, 화면 미사용)
+      logic/                 # 순수 TS: level(지도 해석), engine(이동·특수 타일·데드락), session(Undo/Redo/Restart), solver(BFS 검증·힌트), hint, *.test.ts
+      save.ts, config.ts, input.ts(키·D-pad 반복), useCargoBot.ts, CargoBotGame.tsx, render/(pixels·sprites·renderer), audio/(sfx·music 2곡·CargoAudio)
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker·createAudioContext), loopPlayer(look-ahead BGM 재생기),
                              #   unlock(모든 게임 AudioContext 등록·사용자 입력/탭 복귀 때 resume·막힘 감지, iOS 대응)
@@ -262,6 +267,19 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 - 저작권: 1980년대 오락실 방울 포획 플랫폼 장르의 일반 규칙만 참고했다. 별빛 정령 Lumi·기계 요정·Chime Queen·배경(`render/`), 스테이지 배치, BGM 2곡과 효과음은 모두 자체 제작이며 외부 에셋이 없다.
   다른 게임의 이름·캐릭터·스테이지·음악을 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다. "Bubble Pop Adventure"는 가칭이므로 정식 공개 전 상표 중복을 확인한다.
 
+### Cargo Bot (Canvas 2D)
+- 규칙은 `logic/engine.ts`의 `step` 하나로만 처리한다. 실제 플레이·해답 탐색기(`solver.ts`)·힌트가 모두 이 함수를 쓰므로 규칙을 바꾸면 검증도 자동으로 따라온다.
+- 특수 타일은 상자에만 작용한다(로봇은 그냥 걸음). 상자가 칸에 도착할 때 순간이동 → 컨베이어 → 얼음 → 일반 바닥(정지) 순으로 한 번 적용하고,
+  같은 (칸, 방향)을 다시 지나면 순환으로 보고 멈춘다. 순간이동한 상자는 짝 장치에서 멈추며, 멈춘 상자는 다시 밀 때까지 움직이지 않는다.
+- 한 입력 = 한 턴. `logic/session.ts`가 턴마다 불변 스냅숏(보드 + 이동·밀기 수)을 쌓아 Undo/Redo한다. 렌더러 애니메이션은 연출일 뿐 상태를 바꾸지 않는다.
+- 지도를 바꾸면 `npm run test:cargo-bot`을 돌리고, `stages.ts`의 `par`(최소 밀기·이동)와 `solutions.ts`를 탐색 결과로 갱신한다.
+  7·8·9·13은 기믹 없이는 풀 수 없어야 하고 15는 컨베이어·순간이동이 모두 필수, 얼음은 해법을 바꿔야 한다(`stages.test.ts`).
+- 데드락 경고는 확실한 경우(목표가 아닌 일반 바닥의 벽 구석)만. 별 평가는 `config.ts`의 `starsFor`(최소 밀기 기준).
+- 저장: `my-game-hub:cargo-bot:progress`(기록·이어하기, `save.ts`가 손상 데이터 거부, 형식을 바꾸면 `PROGRESS_VERSION`을 올림), `:sound`, `:music`, `:volume`. 효과음·BGM 기본 꺼짐.
+  개발 서버에서만 `window.__CARGO_BOT__` 노출.
+- 저작권: 1980년대 창고 상자 밀기 퍼즐의 일반 규칙만 참고했다. 로봇·상자·창고 그림, 15개 지도, BGM 2곡과 효과음은 모두 자체 제작이며 외부 에셋이 없다.
+  게임 설명·키워드에 다른 게임의 상표명을 쓰지 않는다.
+
 ### 사운드 공통 (iOS Safari 대응)
 - 모든 게임은 Web Audio API만 쓴다(HTMLAudioElement 없음). AudioContext는 반드시 `lib/audio/synth.ts`의 `createAudioContext()`로 만든다
   (무음 1샘플 재생 + `lib/audio/unlock.ts` 자동 등록). 재생 재개는 `resumeAudioContext`, 일부러 멈출 때(효과음·BGM 모두 끔)는 `suspendAudioContext`,
@@ -305,7 +323,7 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 ### 정책 페이지 / 운영자 정보
 - 운영자 이름·이메일·시행일 등은 `src/lib/site.ts`의 `operatorConfig`에서만 관리한다. `null`이면 `<TodoMark>`가 "[확인 필요]"로 표시하고, 값을 채우면 자동으로 사라진다.
 - 코드로 값을 넣을 수 없는 확인 사항(로그 보존 기간, 배포 리전 등)은 `<TodoMark label="..."/>`와 `{/* TODO: ... */}` 주석으로 표시한다. `grep -rn "TODO" src`로 전체 목록을 볼 수 있다.
-- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정, Lost Relic 진행 저장·최단 기록, Cannon Rivals 게임 내 코인·전적·구매 아이템, Turbo Kart 트랙별 기록, Frosty Roll·Bubble Pop Adventure 최고 점수·체크포인트·설정). 쿠키·광고·Google Analytics는 없음.
+- 개인정보처리방침에는 **실제로 사용 중인 서비스만** 적는다. 현재: Vercel 호스팅 로그, Vercel Web Analytics(쿠키 없음, `layout.tsx`의 `<Analytics />`), 이메일 문의, localStorage(최고 점수, 게임별 사운드 설정, Lost Relic 진행 저장·최단 기록, Cannon Rivals 게임 내 코인·전적·구매 아이템, Turbo Kart 트랙별 기록, Frosty Roll·Bubble Pop Adventure 최고 점수·체크포인트·설정, Cargo Bot 스테이지 기록·이어하기 상태·사운드 설정). 쿠키·광고·Google Analytics는 없음.
 - AdSense나 분석 도구를 연결하는 변경에는 반드시 개인정보처리방침 개정(쿠키, 맞춤 광고 해제 방법, 위탁·국외 이전 표)을 포함한다. 방침 파일 상단 주석의 체크리스트를 따른다.
 - 연락처 이메일을 코드에 하드코딩하지 않는다(`operatorConfig.email` 사용).
 

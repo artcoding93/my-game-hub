@@ -33,7 +33,8 @@ export const metadata: Metadata = {
  *       Turbo Kart (my-game-hub:turbo-kart:records — 트랙별 최고 기록·최고 순위, 난이도별 최고 기록, 총 경기·1위 횟수, 마지막 반영 레이스 번호,
  *       my-game-hub:turbo-kart:sound, :music, :camera — 회전/고정 카메라 선택),
  *       Frosty Roll (my-game-hub:frosty-roll:high-score, :checkpoint — 고급 구간 시작 해금 여부, :sound, :music, :shake — 화면 흔들림, :easy-push — 간편 조작),
- *       Bubble Pop Adventure (my-game-hub:bubble-pop-adventure:high-score, :checkpoint — 고급 구간 시작 해금 여부, :sound, :music, :shake — 화면 흔들림)
+ *       Bubble Pop Adventure (my-game-hub:bubble-pop-adventure:high-score, :checkpoint — 고급 구간 시작 해금 여부, :sound, :music, :shake — 화면 흔들림),
+ *       Cargo Bot (my-game-hub:cargo-bot:progress — 스테이지별 최소 이동·밀기 기록·별 평가·마지막 스테이지·진행 중인 퍼즐 상태, :sound, :music, :volume)
  *   - 방문 통계: Vercel Web Analytics (쿠키 없음, src/app/layout.tsx의 <Analytics />)
  *   - 쿠키·광고·Google Analytics: 사용하지 않음 (Google AdSense는 도입 예정 — 본문 3번에 "도입 예정"으로 구분 표기)
  *   - 외부 API 호출: 없음. 글꼴(next/font)은 빌드 시 내려받아 이 사이트에서 제공한다. 문의 입력 양식 없음(이메일만).
@@ -143,6 +144,10 @@ export default function PrivacyPage() {
         <li>
           Bubble Pop Adventure: 최고 점수(숫자), 고급 구간 체크포인트 해금 여부, 효과음·배경음악 켜기/끄기 설정, 화면 흔들림
           켜기/끄기 설정
+        </li>
+        <li>
+          Cargo Bot: 스테이지별 최소 이동·밀기 기록과 별 평가, 마지막으로 플레이한 스테이지, 이어하기용 진행 중인 퍼즐 상태(로봇·상자
+          위치와 이동 수), 효과음·배경음악 켜기/끄기와 음량 설정
         </li>
       </ul>
       <p>
