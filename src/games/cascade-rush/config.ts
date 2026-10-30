@@ -11,7 +11,7 @@ export const COLOR_COUNT = 5;
 export const SPAWN_X = 2;
 export const SPAWN_Y = 1;
 /** 같은 색이 이 수 이상 상하좌우로 이어지면 터진다 */
-export const POP_SIZE = 4;
+export const POP_SIZE = 3;
 
 export interface SpeedLevel {
   level: number;
@@ -23,28 +23,31 @@ export interface SpeedLevel {
 
 /**
  * 낙하 속도 단계. 남은 시간이 아니라 "실제로 조작한 시간"으로 정하므로 시간 보너스를 받아도 느려지지 않는다.
- * Rush: 0~30초 느림 · 30~60초 보통 · 60초~ 빠름. Endless는 30초마다 한 단계씩 더 빨라진다.
+ * gravity는 "칸당 낙하 간격"이므로 속도를 70%로 줄이려면 간격을 ÷0.7(약 1.43배) 한다. 첫 단계 0.8초 → 1.15초.
+ * Rush: 40초마다 한 단계(단계마다 약 15%씩 빨라짐). Endless: 45초마다 한 단계(약 14%씩).
  */
 export const RUSH_SPEEDS: readonly SpeedLevel[] = [
-  { level: 1, from: 0, gravity: 0.8 },
-  { level: 2, from: 30, gravity: 0.5 },
-  { level: 3, from: 60, gravity: 0.3 },
+  { level: 1, from: 0, gravity: 1.15 },
+  { level: 2, from: 40, gravity: 0.97 },
+  { level: 3, from: 80, gravity: 0.82 },
+  { level: 4, from: 120, gravity: 0.7 },
+  { level: 5, from: 160, gravity: 0.6 },
 ];
 
 export const ENDLESS_SPEEDS: readonly SpeedLevel[] = [
-  { level: 1, from: 0, gravity: 0.8 },
-  { level: 2, from: 30, gravity: 0.62 },
-  { level: 3, from: 60, gravity: 0.48 },
-  { level: 4, from: 90, gravity: 0.38 },
-  { level: 5, from: 120, gravity: 0.3 },
-  { level: 6, from: 150, gravity: 0.24 },
-  { level: 7, from: 180, gravity: 0.2 },
+  { level: 1, from: 0, gravity: 1.15 },
+  { level: 2, from: 45, gravity: 0.99 },
+  { level: 3, from: 90, gravity: 0.85 },
+  { level: 4, from: 135, gravity: 0.73 },
+  { level: 5, from: 180, gravity: 0.63 },
+  { level: 6, from: 225, gravity: 0.54 },
+  { level: 7, from: 270, gravity: 0.46 },
 ];
 
 export const GAME_CONFIG = {
   rush: {
-    startTime: 90,
-    maxTime: 120,
+    startTime: 120,
+    maxTime: 150,
     /** 연쇄 시간 보너스: 큰 조건부터 검사해 하나만 준다 */
     bonuses: [
       { chain: 5, seconds: 5 },
@@ -58,8 +61,11 @@ export const GAME_CONFIG = {
   readyTime: 1.4,
   /** ↓를 누르고 있을 때 한 칸 내려가는 간격 */
   softDropInterval: 0.035,
-  /** 바닥에 닿은 뒤 고정까지 기다리는 시간과, 이동·회전으로 다시 미룰 수 있는 최대 횟수 */
-  lockDelay: 0.45,
+  /**
+   * 바닥에 닿은 뒤 고정까지 기다리는 시간과, 이동·회전으로 다시 미룰 수 있는 최대 횟수.
+   * 횟수는 쌍이 지금까지보다 더 낮은 줄에 닿았을 때만 다시 채워진다(회전으로 들어 올렸다 내리는 무한 지연 방지).
+   */
+  lockDelay: 0.6,
   maxLockResets: 10,
   /** 길게 누를 때 반복 이동: 첫 반복까지(DAS)와 이후 간격(ARR) */
   das: 0.16,
@@ -75,8 +81,13 @@ export const GAME_CONFIG = {
   score: {
     /** 크리스털 1개 기본 점수 */
     perCrystal: 10,
-    /** 연쇄 배율: 1연쇄 ×1, 2연쇄 ×2, 3연쇄 ×4, 4연쇄 ×8, 5연쇄 ×16 … (두 배씩, 상한 maxMultiplier) */
-    maxMultiplier: 1024,
+    /** 연쇄 배율: 1연쇄 ×1, 2연쇄 ×2, 3연쇄 ×4, 4연쇄 ×8, 5연쇄 이상 ×16 (두 배씩, 상한 maxMultiplier) */
+    maxMultiplier: 16,
+    /** 그룹 크기 보너스: 3개 ×1, 4개 ×1.5, 5개 이상 ×2 (큰 것부터 검사) */
+    sizeBonus: [
+      { size: 5, multiplier: 2 },
+      { size: 4, multiplier: 1.5 },
+    ],
   },
 
   /** 연쇄 단계별 화면 흔들림 세기(px, 내부 해상도 기준). 설정에서 줄이거나 끌 수 있다 */
@@ -93,9 +104,18 @@ export function chainMultiplier(chain: number): number {
   return Math.min(2 ** Math.max(chain - 1, 0), GAME_CONFIG.score.maxMultiplier);
 }
 
-/** 한 연쇄 단계 점수 = 터진 크리스털 수 × 기본 점수 × 연쇄 배율 */
-export function chainStepPoints(crystals: number, chain: number): number {
-  return crystals * GAME_CONFIG.score.perCrystal * chainMultiplier(chain);
+/** 그룹 하나의 크기 보너스 배율 */
+export function sizeMultiplier(size: number): number {
+  return GAME_CONFIG.score.sizeBonus.find((b) => size >= b.size)?.multiplier ?? 1;
+}
+
+/**
+ * 한 연쇄 단계 점수 = Σ(그룹 크기 × 기본 점수 × 크기 보너스) × 연쇄 배율.
+ * 동시에 터진 그룹은 각자 크기 보너스를 받고, 연쇄 배율은 단계마다 한 번만 곱한다.
+ */
+export function chainStepPoints(groupSizes: readonly number[], chain: number): number {
+  const base = groupSizes.reduce((sum, size) => sum + size * GAME_CONFIG.score.perCrystal * sizeMultiplier(size), 0);
+  return Math.round(base * chainMultiplier(chain));
 }
 
 /** 한 번의 연쇄에서 받는 시간 보너스 (가장 큰 것 하나) */

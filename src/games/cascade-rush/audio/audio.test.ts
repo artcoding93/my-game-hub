@@ -117,9 +117,9 @@ describe("15. 사운드", () => {
     const cues = cuesFor([
       { type: "move" },
       { type: "rotate" },
-      { type: "land", hard: false, cells: 2 },
-      { type: "land", hard: true, cells: 2 },
-      { type: "pop", chain: 2, crystals: [], groups: 1, points: 80 },
+      { type: "land", hard: false, cells: 2, crystals: [] },
+      { type: "land", hard: true, cells: 2, crystals: [] },
+      { type: "pop", chain: 2, crystals: [], groups: 1, sizes: [3], points: 80 },
       { type: "countdown", seconds: 9 },
       { type: "gameOver", reason: "time" },
       { type: "gameOver", reason: "topout" },
@@ -164,12 +164,12 @@ describe("15. 사운드", () => {
       const audio = new CascadeAudio(true, false);
       audio.unlock();
       const base = ctx().starts.length;
-      audio.handle([{ type: "pop", chain: 3, crystals: [], groups: 1, points: 160 }]);
+      audio.handle([{ type: "pop", chain: 3, crystals: [], groups: 1, sizes: [3], points: 160 }]);
       const withSfx = ctx().starts.length;
       assert.ok(withSfx > base);
       assert.equal(audio.musicPlaying, false);
       audio.setSfxEnabled(false);
-      audio.handle([{ type: "pop", chain: 4, crystals: [], groups: 1, points: 320 }]);
+      audio.handle([{ type: "pop", chain: 4, crystals: [], groups: 1, sizes: [3], points: 320 }]);
       assert.equal(ctx().starts.length, withSfx);
       audio.setSfxEnabled(true);
       audio.handle([{ type: "rotate" }]);
@@ -183,7 +183,7 @@ describe("15. 사운드", () => {
       audio.unlock();
       const count = (chain: number) => {
         const before = ctx().starts.length;
-        audio.handle([{ type: "pop", chain, crystals: [], groups: 1, points: 0 }]);
+        audio.handle([{ type: "pop", chain, crystals: [], groups: 1, sizes: [3], points: 0 }]);
         return ctx().starts.length - before;
       };
       const [a, b, c] = [count(1), count(3), count(5)];

@@ -53,6 +53,8 @@ export class CascadeController {
       events.push(...stepGame(this.state, this.input.take(), FIXED_DT));
       this.accumulator -= FIXED_DT;
     }
+    // 게임이 끝나면 누르고 있던 버튼·남은 회전을 지운다(다음 게임에 넘어가지 않게)
+    if (events.some((e) => e.type === "gameOver")) this.input.clear();
     this.emit(events);
     this.publishHud();
     return events;

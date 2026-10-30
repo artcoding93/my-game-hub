@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { chainLabel, chainMultiplier, chainStepPoints, COLS, GAME_CONFIG, ROWS, SPAWN_X, SPAWN_Y, speedFor, timeBonusFor } from "../config";
+import { chainLabel, chainMultiplier, chainStepPoints, COLS, ENDLESS_SPEEDS, GAME_CONFIG, ROWS, RUSH_SPEEDS, SPAWN_X, SPAWN_Y, sizeMultiplier, speedFor, timeBonusFor } from "../config";
 import { InputState } from "../input";
 import { NO_INPUT, type Color, type GameEvent, type GameState, type InputSnapshot, type Pair } from "../types";
 import { applyGravity, boardFrom, emptyBoard, findGroups, landingCells, pairCells, rotate } from "./board";
@@ -8,13 +8,13 @@ import { createGame, startGame, stepGame, togglePause } from "./game";
 
 const DT = 1 / 60;
 
-/** 연쇄 시험용 보드 (실제 엔진으로 연쇄 수를 확인해 둔 배치). pair는 즉시 낙하시킬 쌍 */
+/** 연쇄 시험용 보드 (3개 연결 규칙, 실제 엔진으로 연쇄 수를 확인해 둔 배치). pair는 즉시 낙하시킬 세로 쌍 */
 const CHAIN_BOARDS: Record<number, { rows: string[]; x: number; pivot: Color; child: Color }> = {
-  2: { rows: ["2.....", "1.....", "12....", "122..."], x: 1, pivot: 1, child: 3 },
-  3: { rows: ["...4..", "...1..", "...1..", "...3..", "..43.3", "..1144"], x: 4, pivot: 3, child: 1 },
-  4: { rows: ["..3...", "..3...", ".21...", ".13...", "2123..", "21444."], x: 5, pivot: 4, child: 1 },
-  5: { rows: ["...31.", "...14.", ".3345.", ".11411", "355514"], x: 5, pivot: 1, child: 1 },
-  6: { rows: ["..2...", "..1...", "..4...", "..4...", "..5...", "..5.2.", ".1423.", "553155", "143352"], x: 5, pivot: 5, child: 1 },
+  2: { rows: ["....3.", "....1.", "....3.", "..211.", ".24434"], x: 3, pivot: 3, child: 3 },
+  3: { rows: [".2....", ".3....", ".2....", "41....", "122...", "144.5."], x: 2, pivot: 2, child: 1 },
+  4: { rows: ["....3.", "....41", "....14", "..1.15", "..3.41", "311243"], x: 3, pivot: 4, child: 3 },
+  5: { rows: [".1.1..", ".1.3..", ".5.4.3", ".445.5", ".525.5", ".11234", "152435"], x: 2, pivot: 4, child: 5 },
+  6: { rows: ["..1.54", "..1432", ".54143", "335435", "142254"], x: 0, pivot: 3, child: 5 },
 };
 
 /** 조작 중인 상태를 바로 만든다 */
@@ -195,35 +195,66 @@ describe("3. 빠른 낙하와 즉시 낙하", () => {
   });
 });
 
-describe("4. 4개 이상 연결 시 제거", () => {
-  test("같은 색 4개가 상하좌우로 이어지면 사라진다", () => {
-    const s = playing(["11...."], { x: 2, orientation: 1, pivot: 1, child: 1 });
+describe("4. 3개 이상 연결 시 제거", () => {
+  test("같은 색 3개가 상하좌우로 이어지면 사라진다 (기본 폭발)", () => {
+    const s = playing(["1....."], { x: 1, orientation: 1, pivot: 1, child: 1 });
     const events = dropAndResolve(s);
     assert.equal(pops(events).length, 1);
-    assert.equal(pops(events)[0].crystals.length, 4);
+    assert.equal(pops(events)[0].crystals.length, 3);
+    assert.deepEqual(pops(events)[0].sizes, [3]);
+    assert.equal(s.score, 30);
     assert.ok(s.board.every((row) => row.every((c) => c === 0)));
   });
 
-  test("3개는 남고, 대각선 연결은 인정하지 않는다", () => {
-    assert.equal(findGroups(boardFrom(["1.....", "11...."])).length, 0);
-    assert.equal(findGroups(boardFrom([".1....", "1.1...", ".1...."])).length, 0);
-    assert.equal(findGroups(boardFrom(["1.....", "1.....", "11...."])).length, 1);
+  test("세로로 3개를 쌓아도 터진다", () => {
+    const s = playing(["1....."], { x: 0, pivot: 1, child: 1 });
+    const events = dropAndResolve(s);
+    assert.equal(pops(events)[0]?.crystals.length, 3);
   });
 
-  test("5개 이상 이어진 그룹은 전부 사라진다", () => {
+  test("2개는 남는다", () => {
+    const s = playing([], { x: 0, pivot: 1, child: 1 });
+    const events = dropAndResolve(s);
+    assert.equal(pops(events).length, 0);
+    assert.equal(s.board[ROWS - 1][0], 1);
+    assert.equal(s.board[ROWS - 2][0], 1);
+    assert.equal(findGroups(boardFrom(["1.....", "1....."])).length, 0);
+  });
+
+  test("대각선 연결은 인정하지 않는다", () => {
+    assert.equal(findGroups(boardFrom(["1.....", ".1....", "..1..."])).length, 0);
+    assert.equal(findGroups(boardFrom([".1....", "1.1...", ".1...."])).length, 0);
+    assert.equal(findGroups(boardFrom(["1.....", "11...."])).length, 1);
+  });
+
+  test("4개 연결: 강화 폭발 (기본 점수 ×1.5)", () => {
+    const s = playing(["11...."], { x: 2, orientation: 1, pivot: 1, child: 1 });
+    const events = dropAndResolve(s);
+    assert.deepEqual(pops(events)[0].sizes, [4]);
+    assert.equal(s.score, 4 * 10 * 1.5);
+  });
+
+  test("5개 이상 연결: 대형 폭발 (기본 점수 ×2), 그룹 전부 사라진다", () => {
     const groups = findGroups(boardFrom(["1.....", "1.....", "1111.."]));
     assert.equal(groups.length, 1);
     assert.equal(groups[0].length, 6);
+    // 바닥 줄 1·1 옆에 가로 쌍 1·1 + 그 위 줄 1 하나 → 5개
+    const big = playing(["1.....", "11...."], { x: 2, orientation: 1, pivot: 1, child: 1 });
+    const bigEvents = dropAndResolve(big);
+    assert.deepEqual(pops(bigEvents)[0].sizes, [5]);
+    assert.equal(big.score, 5 * 10 * 2);
   });
 
-  test("동시에 터진 두 그룹은 하나의 연쇄 단계", () => {
-    // 가로 쌍(1·2)이 0열의 1 세 개, 1열의 2 세 개 위에 동시에 놓인다
-    const s = playing(["12....", "12....", "12...."], { x: 0, orientation: 1, pivot: 1, child: 2 });
+  test("동시에 터진 두 그룹은 하나의 연쇄 단계 (그룹마다 크기 보너스, 연쇄 배율은 한 번)", () => {
+    // 가로 쌍(1·2)이 0열의 1 두 개, 1열의 2 두 개 위에 동시에 놓인다
+    const s = playing(["12....", "12...."], { x: 0, orientation: 1, pivot: 1, child: 2 });
     const events = dropAndResolve(s);
     const p = pops(events);
     assert.equal(p.length, 1);
     assert.equal(p[0].groups, 2);
+    assert.deepEqual(p[0].sizes, [3, 3]);
     assert.equal(p[0].chain, 1);
+    assert.equal(s.score, 60);
   });
 
   test("중력: 빈칸 위 크리스털이 아래로 떨어진다", () => {
@@ -275,21 +306,33 @@ describe("5. 연쇄", () => {
 });
 
 describe("6. 연쇄 점수 배율", () => {
-  test("배율: ×1, ×2, ×4, ×8, ×16 이상", () => {
-    assert.deepEqual([1, 2, 3, 4, 5, 6].map(chainMultiplier), [1, 2, 4, 8, 16, 32]);
-    assert.equal(chainStepPoints(4, 1), 40);
-    assert.equal(chainStepPoints(5, 3), 200);
+  test("연쇄 배율: ×1, ×2, ×4, ×8, 5연쇄 이상 ×16", () => {
+    assert.deepEqual([1, 2, 3, 4, 5, 6, 9].map(chainMultiplier), [1, 2, 4, 8, 16, 16, 16]);
   });
 
-  test("점수 = 터진 크리스털 수 × 10 × 연쇄 배율의 합", () => {
-    const s = chainState(2);
-    const events = dropAndResolve(s);
-    const expected = pops(events).reduce((sum, p) => sum + p.crystals.length * 10 * chainMultiplier(p.chain), 0);
-    assert.equal(s.score, expected);
-    assert.equal(s.score, 4 * 10 * 1 + 4 * 10 * 2);
-    const end = events.find((e) => e.type === "chainEnd");
-    assert.ok(end?.type === "chainEnd" && end.total === s.score);
-    assert.equal(s.crystals, 8);
+  test("연결 개수 보너스: 3개 ×1, 4개 ×1.5, 5개 이상 ×2", () => {
+    assert.deepEqual([3, 4, 5, 8].map(sizeMultiplier), [1, 1.5, 2, 2]);
+    assert.equal(chainStepPoints([3], 1), 30);
+    assert.equal(chainStepPoints([4], 1), 60);
+    assert.equal(chainStepPoints([5], 3), 5 * 10 * 2 * 4);
+    // 동시에 터진 그룹: 각자 크기 보너스 후 연쇄 배율 한 번
+    assert.equal(chainStepPoints([3, 4], 2), (30 + 60) * 2);
+  });
+
+  test("점수 = Σ 연쇄 단계마다 (그룹 크기 × 10 × 크기 보너스) × 연쇄 배율, 중복 없이 한 번씩", () => {
+    for (const n of [2, 3, 5, 6]) {
+      const s = chainState(n);
+      const events = dropAndResolve(s);
+      const p = pops(events);
+      const expected = p.reduce((sum, e) => sum + e.sizes.reduce((a, size) => a + size * 10 * sizeMultiplier(size), 0) * chainMultiplier(e.chain), 0);
+      assert.equal(s.score, expected, `${n}연쇄`);
+      assert.equal(p.reduce((sum, e) => sum + e.points, 0), s.score);
+      assert.equal(s.crystals, p.reduce((sum, e) => sum + e.crystals.length, 0));
+      const end = events.find((e) => e.type === "chainEnd");
+      assert.ok(end?.type === "chainEnd" && end.total === s.score);
+      // 같은 크리스털이 두 번 세어지지 않는다
+      for (const e of p) assert.equal(new Set(e.crystals.map((c) => `${c.x},${c.y}`)).size, e.crystals.length);
+    }
   });
 });
 
@@ -315,9 +358,9 @@ describe("7·8. 시간 보너스", () => {
     assert.ok(s.timeLeft <= 55 && s.timeLeft > 54);
   });
 
-  test("남은 시간은 120초를 넘지 않는다", () => {
+  test("남은 시간은 150초를 넘지 않는다", () => {
     const s = chainState(5);
-    s.timeLeft = 118;
+    s.timeLeft = 148;
     dropAndResolve(s);
     assert.equal(s.timeLeft, GAME_CONFIG.rush.maxTime);
   });
@@ -354,21 +397,21 @@ describe("9. 연쇄 연출 중 타이머 정지", () => {
     startGame(s, "rush", 1);
     run(s, GAME_CONFIG.readyTime - 0.1);
     assert.equal(s.phase, "ready");
-    assert.equal(s.timeLeft, 90);
+    assert.equal(s.timeLeft, 120);
     run(s, 0.2);
     assert.equal(s.phase, "playing");
     assert.ok(s.active);
   });
 });
 
-describe("10. 90초 종료", () => {
-  test("90초에서 시작해 조작 시간만큼 줄고, 0초가 되면 조작을 끝내고 결과 화면", () => {
+describe("10. 120초 종료", () => {
+  test("120초에서 시작해 조작 시간만큼 줄고, 0초가 되면 조작을 끝내고 결과 화면", () => {
     const s = createGame("rush", 3);
     startGame(s, "rush", 3);
-    assert.equal(s.timeLeft, 90);
+    assert.equal(s.timeLeft, 120);
     run(s, GAME_CONFIG.readyTime + DT);
     run(s, 2);
-    assert.ok(Math.abs(s.timeLeft - 88) < 0.05, `${s.timeLeft}`);
+    assert.ok(Math.abs(s.timeLeft - 118) < 0.05, `${s.timeLeft}`);
 
     s.board = emptyBoard();
     s.active = { x: 2, y: 3, orientation: 0, pivot: 1, child: 2 };
@@ -426,7 +469,7 @@ describe("12. 일시정지와 재개", () => {
     assert.deepEqual([s.timeLeft, s.active!.x, s.active!.y], [60, 2, 2]);
     togglePause(s);
     assert.equal(s.phase, "playing");
-    run(s, 1);
+    run(s, speedFor("rush", 0).gravity + 0.1);
     assert.ok(s.timeLeft < 60 && s.active!.y > 2);
   });
 
@@ -453,23 +496,32 @@ describe("12. 일시정지와 재개", () => {
 });
 
 describe("13. Endless 모드", () => {
-  test("시간 제한이 없고, 조작 시간 30초마다 낙하 속도가 빨라진다", () => {
+  test("시간 제한이 없고, 조작 시간 45초마다 낙하 속도가 한 단계씩 빨라진다", () => {
     const s = playing([], {}, "endless");
     const levels: number[] = [];
-    for (let i = 0; i < 200 * 60; i++) {
+    for (let i = 0; i < 300 * 60; i++) {
       if (s.active && s.active.y > 4) s.active = { ...s.active, y: 0 };
       for (const e of once(s, {})) if (e.type === "speedUp") levels.push(e.level);
     }
     assert.equal(s.phase, "playing");
     assert.equal(s.timeLeft, Infinity);
     assert.deepEqual(levels, [2, 3, 4, 5, 6, 7]);
-    assert.ok(speedFor("endless", 200).gravity < speedFor("endless", 0).gravity);
+    assert.ok(speedFor("endless", 300).gravity < speedFor("endless", 0).gravity);
   });
 
-  test("Rush 낙하 속도: 0~30초 느림, 30~60초 보통, 60초~ 빠름. 시간 보너스를 받아도 내려가지 않는다", () => {
-    assert.deepEqual([0, 29, 30, 59, 60, 200].map((t) => speedFor("rush", t).level), [1, 1, 2, 2, 3, 3]);
+  test("Endless 속도 상승 완화: 주기 45초 이상, 단계마다 속도 증가 20% 이하, 최고 속도도 예전(칸당 0.2초)보다 느리다", () => {
+    for (let i = 1; i < ENDLESS_SPEEDS.length; i++) {
+      assert.ok(ENDLESS_SPEEDS[i].from - ENDLESS_SPEEDS[i - 1].from >= 45);
+      assert.ok(ENDLESS_SPEEDS[i - 1].gravity / ENDLESS_SPEEDS[i].gravity <= 1.2, `LV ${i + 1}`);
+    }
+    assert.ok(ENDLESS_SPEEDS.at(-1)!.gravity >= 0.4);
+  });
+
+  test("Rush 낙하 속도: 40초마다 한 단계. 시간 보너스를 받아도 내려가지 않는다", () => {
+    assert.deepEqual([0, 39, 40, 79, 80, 200].map((t) => speedFor("rush", t).level), [1, 1, 2, 2, 3, 5]);
+    for (let i = 1; i < RUSH_SPEEDS.length; i++) assert.ok(RUSH_SPEEDS[i - 1].gravity / RUSH_SPEEDS[i].gravity <= 1.2);
     const s = chainState(5);
-    s.playTime = 61;
+    s.playTime = 81;
     s.speed = 3;
     s.timeLeft = 20;
     dropAndResolve(s);
@@ -483,6 +535,95 @@ describe("13. Endless 모드", () => {
     const s = playing(rows, { pivot: 3, child: 4 }, "endless");
     dropAndResolve(s);
     assert.equal(s.endReason, "topout");
+  });
+});
+
+describe("16. 난이도: 낙하 속도와 착지 유예", () => {
+  test("시작 낙하 속도는 예전(칸당 0.8초)의 약 70% (칸당 간격 약 1.14초)", () => {
+    for (const mode of ["rush", "endless"] as const) {
+      const ratio = 0.8 / speedFor(mode, 0).gravity;
+      assert.ok(ratio > 0.67 && ratio < 0.73, `${mode} ${ratio}`);
+    }
+    // 실제 진행: 5초 동안 내려간 칸 수
+    const s = playing([], { y: 1 });
+    run(s, 5);
+    assert.equal(s.active!.y, 1 + Math.floor(5 / speedFor("rush", 0).gravity));
+  });
+
+  test("착지 유예 0.6초: 닿은 뒤 0.55초까지는 움직일 수 있고 0.6초가 지나면 고정", () => {
+    assert.equal(GAME_CONFIG.lockDelay, 0.6);
+    const s = playing([], { y: ROWS - 1 });
+    run(s, 0.55);
+    assert.ok(s.active, "아직 고정되지 않음");
+    once(s, { move: 1 });
+    assert.equal(s.active!.x, 3);
+    const t = run(s, 0.65);
+    assert.ok(t.some((e) => e.type === "land"));
+  });
+
+  test("유예 중 옆으로 옮겨 다시 공중에 뜨면 착지를 다시 판정한다", () => {
+    const s = playing(["3....."], { x: 0, y: ROWS - 3 });
+    run(s, 0.3);
+    assert.ok(s.active && s.active.y === ROWS - 3, "3 위에 닿아 있음");
+    once(s, { move: 1 });
+    run(s, 0.4, { move: 1 });
+    assert.ok(s.active, "빈 열로 옮기면 고정되지 않음");
+    run(s, GAME_CONFIG.lockDelay + 2);
+    assert.equal(s.board[ROWS - 1][5], 1, "바닥까지 떨어진 뒤 고정");
+  });
+
+  test("착지 유예 악용 방지: 계속 이동·회전해도 일정 시간 안에 반드시 고정된다", () => {
+    const s = playing([], { y: ROWS - 1, orientation: 1, x: 2 });
+    let frames = 0;
+    let landed = false;
+    for (; frames < 30 * 60 && !landed; frames++) {
+      const input: Partial<InputSnapshot> = frames % 2 === 0 ? { rotateCW: true } : { move: frames % 4 === 1 ? 1 : -1 };
+      landed = stepGame(s, { ...NO_INPUT, ...input }, DT).some((e) => e.type === "land");
+    }
+    assert.ok(landed, "고정되지 않음");
+    const limit = (GAME_CONFIG.maxLockResets + 1) * GAME_CONFIG.lockDelay + 2 * speedFor("rush", 0).gravity;
+    assert.ok(frames * DT < limit, `${(frames * DT).toFixed(2)}초 > ${limit}`);
+  });
+
+  test("즉시 낙하는 유예 없이 바로 배치", () => {
+    const s = playing([], { y: 2 });
+    const events = once(s, { hardDrop: true });
+    assert.ok(events.some((e) => e.type === "land" && e.hard));
+  });
+
+  test("착지 이벤트에 갈라진 크리스털까지 반영한 최종 자리가 담긴다", () => {
+    const s = playing(["3....."], { x: 0, orientation: 1, pivot: 1, child: 2 });
+    const land = once(s, { hardDrop: true }).find((e) => e.type === "land");
+    assert.ok(land?.type === "land");
+    assert.deepEqual(land.crystals.map((c) => [c.x, c.y]).sort(), [[0, ROWS - 2], [1, ROWS - 1]]);
+  });
+});
+
+describe("17. 다음 크리스털 2쌍과 회전 입력", () => {
+  test("대기열은 현재 쌍을 빼고 앞의 두 쌍이 다음 순서 그대로 나온다", () => {
+    const s = createGame("endless", 9);
+    startGame(s, "endless", 9);
+    run(s, GAME_CONFIG.readyTime + DT);
+    for (let i = 0; i < 12; i++) {
+      const next = s.queue.slice(0, 2).map((p) => p.slice());
+      assert.equal(next.length, 2);
+      once(s, { hardDrop: true });
+      while (s.resolve) once(s, {});
+      if (s.phase !== "playing") break;
+      assert.deepEqual([s.active!.pivot, s.active!.child], next[0]);
+      assert.deepEqual(s.queue[0], next[1]);
+    }
+  });
+
+  test("한 프레임에 회전을 두 번 눌러도 두 번 모두 처리된다 (빠른 연타)", () => {
+    const input = new InputState();
+    input.trigger("rotateCW");
+    input.trigger("rotateCW");
+    const s = playing([], { y: 4 });
+    stepGame(s, input.take(), DT);
+    stepGame(s, input.take(), DT);
+    assert.equal(s.active!.orientation, 2);
+    assert.equal(input.take().rotateCW, false);
   });
 });
 

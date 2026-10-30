@@ -35,6 +35,7 @@ export default function CascadeRushGame() {
     const renderer = new CascadeRenderer();
     const cache = new CrystalCache();
     const font = arcadeFont.style.fontFamily;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let frame = 0;
     let last = performance.now();
     const loop = (now: number) => {
@@ -45,7 +46,7 @@ export default function CascadeRushGame() {
       const s = controller.state;
       const board = boardRef.current;
       const ctx = board && prepareCanvas(board, BOARD_W, BOARD_H);
-      if (ctx) renderer.render(ctx, s, s.phase === "paused" ? 0 : dt, { shake: SHAKE_FACTOR[shakeRef.current], font });
+      if (ctx) renderer.render(ctx, s, s.phase === "paused" ? 0 : dt, { shake: SHAKE_FACTOR[shakeRef.current], font, reducedMotion: reduceMotion.matches });
       nextRefs.current.forEach((canvas, i) => {
         const c = canvas && prepareCanvas(canvas, NEXT_W, NEXT_H);
         if (c) drawNext(c, s.phase === "title" ? undefined : s.queue[i], NEXT_W, NEXT_H, cache);
@@ -69,18 +70,22 @@ export default function CascadeRushGame() {
           <div className="pointer-coarse:landscape:hidden">
             <TimerBar hud={hud} controller={controller} />
           </div>
-          <div className="flex items-start justify-center gap-2 sm:gap-4">
-            <div className="relative aspect-[1/2] w-[min(calc(100vw-8.5rem),calc((100dvh-15rem)/2),20rem)] min-w-36 shrink-0 overflow-hidden rounded-lg border-2 border-violet-300/40 shadow-[0_0_24px_rgba(196,181,253,0.25)] pointer-coarse:w-[min(calc(100vw-8.5rem),calc((100dvh-19rem)/2),20rem)] pointer-coarse:landscape:w-[min(calc((100dvh-8rem)/2),20rem)] pointer-coarse:landscape:min-w-0">
+          {/*
+            보드 너비: 화면 폭 − (페이지 여백 + 점수판), 세로는 화면 높이 − (상단 버튼·시간·터치 버튼) 의 절반 중 작은 값.
+            모바일 세로 화면에서 점수판을 좁히고 위아래 요소를 줄여 보드를 최대한 크게 쓴다.
+          */}
+          <div className="flex items-start justify-center gap-1.5 sm:gap-4">
+            <div className="relative aspect-[1/2] w-[min(calc(100vw-7.75rem),calc((100dvh-15rem)/2),20rem)] min-w-36 shrink-0 overflow-hidden rounded-lg border-2 border-violet-300/60 shadow-[0_0_0_1px_rgba(232,121,249,0.35),0_0_14px_rgba(196,181,253,0.25)] pointer-coarse:w-[min(calc(100vw-7.75rem),calc((100dvh-11rem)/2),20rem)] pointer-coarse:landscape:w-[min(calc((100dvh-8rem)/2),20rem)] pointer-coarse:landscape:min-w-0">
               <canvas ref={boardRef} className="h-full w-full touch-none" aria-label="Cascade Rush 게임판 (가로 6칸, 세로 12칸)" />
               <Overlay game={game} />
             </div>
-            <aside className="flex w-20 shrink-0 flex-col gap-1.5 sm:w-28" aria-label="점수판">
+            <aside className="flex w-[4.25rem] shrink-0 flex-col gap-1 sm:w-28 sm:gap-1.5" aria-label="점수판">
               {/* 터치 가로 화면: 세로 공간이 부족해 남은 시간을 점수판 맨 위에 둔다 */}
               <div className="hidden pointer-coarse:landscape:block">
                 <Stat label={hud.mode === "rush" ? "TIME" : "MODE"} value={hud.mode === "rush" ? String(hud.seconds ?? GAME_CONFIG.rush.startTime) : "ENDLESS"} highlight={hud.seconds !== null && hud.seconds <= 30 && hud.phase === "playing"} />
               </div>
               <Panel label="NEXT">
-                <div className="flex items-end justify-center gap-2">
+                <div className="flex items-end justify-center gap-1 sm:gap-2">
                   {[0, 1].map((i) => (
                     <canvas
                       key={i}
@@ -88,7 +93,7 @@ export default function CascadeRushGame() {
                         nextRefs.current[i] = el;
                       }}
                       aria-label={hud.next[i] ? `${i === 0 ? "다음" : "그다음"} 크리스털: ${CRYSTALS[hud.next[i][1]].name}, ${CRYSTALS[hud.next[i][0]].name}` : undefined}
-                      className={`h-14 w-7 ${i > 0 ? "scale-75 opacity-70" : ""}`}
+                      className={`h-14 w-7 ${i > 0 ? "origin-bottom scale-[0.8]" : ""}`}
                     />
                   ))}
                 </div>
@@ -98,7 +103,8 @@ export default function CascadeRushGame() {
               </Stat>
               <Stat label="CHAIN" value={hud.chain > 0 ? `${hud.chain} ×${chainMultiplier(hud.chain)}` : "-"} highlight={hud.chain >= 3} />
               <Stat label="MAX CHAIN" value={String(hud.maxChain)} />
-              <div className="pointer-coarse:landscape:hidden">
+              {/* 좁은 화면에서는 생략 (결과 화면에 표시) */}
+              <div className="hidden sm:block pointer-coarse:landscape:hidden">
                 <Stat label="CRYSTALS" value={String(hud.crystals)} />
               </div>
               <Stat label="SPEED" value={`LV ${hud.speed}`} />
@@ -144,9 +150,9 @@ function ScoreCounter({ value }: { value: number }) {
 
 function Stat({ label, value, children, highlight }: { label: string; value?: string; children?: ReactNode; highlight?: boolean }) {
   return (
-    <div className="rounded-md bg-violet-950/60 px-1.5 py-1 ring-1 ring-violet-300/20">
+    <div className="rounded-md bg-violet-950/60 px-1 py-1 ring-1 ring-violet-300/20 sm:px-1.5">
       <div className="text-[6px] text-fuchsia-300 sm:text-[8px]">{label}</div>
-      <div className={`truncate text-[9px] tabular-nums sm:text-xs ${highlight ? "text-amber-200" : ""}`}>{children ?? value}</div>
+      <div className={`truncate text-[8px] tabular-nums min-[400px]:text-[9px] sm:text-xs ${highlight ? "text-amber-200" : ""}`}>{children ?? value}</div>
     </div>
   );
 }
@@ -161,7 +167,7 @@ function Panel({ label, children }: { label: string; children: ReactNode }) {
 }
 
 const smallButton =
-  "h-11 min-w-11 rounded-md border-2 px-2 text-[8px] uppercase tracking-wider transition-colors active:translate-y-px disabled:opacity-30 sm:text-[9px]";
+  "h-11 min-w-11 rounded-md border-2 px-1.5 text-[7px] uppercase tracking-wide transition-colors active:translate-y-px disabled:opacity-30 min-[400px]:px-2 min-[400px]:text-[8px] sm:tracking-wider sm:text-[9px]";
 
 const SHAKE_LABEL: Record<ShakeLevel, string> = { 2: "On", 1: "Low", 0: "Off" };
 
@@ -170,8 +176,9 @@ function TopBar({ game }: { game: GameApi }) {
   const canPause = hud.phase === "playing" || hud.phase === "paused" || hud.phase === "ready";
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <p className="bg-linear-to-b from-white to-fuchsia-300 bg-clip-text text-xs text-transparent sm:text-base">CASCADE RUSH</p>
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* 좁은 화면에서는 제목을 빼고 버튼 네 개를 한 줄에 둔다 (제목은 시작 화면에 있음) */}
+      <p className="hidden bg-linear-to-b from-white to-fuchsia-300 bg-clip-text text-xs text-transparent min-[480px]:block sm:text-base">CASCADE RUSH</p>
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-1 min-[400px]:gap-1.5">
         <button type="button" onClick={game.togglePause} disabled={!canPause} className={`${smallButton} border-fuchsia-300/70 text-fuchsia-100 hover:bg-fuchsia-300/10`}>
           {hud.phase === "paused" ? "Resume" : "Pause"}
         </button>
@@ -233,7 +240,7 @@ function TimerBar({ hud, controller }: { hud: HudState; controller: CascadeContr
 
   if (hud.mode === "endless") {
     return (
-      <div className="flex h-10 items-center justify-center gap-3">
+      <div className="flex h-8 items-center justify-center gap-3 sm:h-10">
         <span className="text-[8px] text-fuchsia-300 sm:text-[10px]">ENDLESS</span>
         <span className="text-lg text-violet-100 sm:text-xl">∞</span>
       </div>
@@ -244,7 +251,7 @@ function TimerBar({ hud, controller }: { hud: HudState; controller: CascadeContr
   const color = !active || seconds > 30 ? "text-white" : seconds > 10 ? "text-amber-300" : "text-rose-400";
   const pct = Math.min(seconds / GAME_CONFIG.rush.maxTime, 1) * 100;
   return (
-    <div className="relative flex h-10 items-center gap-2" role="timer" aria-label={`남은 시간 ${seconds}초`}>
+    <div className="relative flex h-8 items-center gap-2 sm:h-10" role="timer" aria-label={`남은 시간 ${seconds}초`}>
       <span className="text-[8px] text-fuchsia-300 sm:text-[10px]">TIME</span>
       <span className={`w-14 text-center text-lg tabular-nums sm:text-xl ${color} ${active && seconds <= 10 ? "animate-pulse" : ""}`}>{seconds}</span>
       <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-violet-950 ring-1 ring-violet-300/30">
@@ -304,7 +311,7 @@ function CrystalRow({ size = 22 }: { size?: number }) {
 
 function ModeButtons({ game }: { game: GameApi }) {
   const options: { mode: GameMode; title: string; desc: string }[] = [
-    { mode: "rush", title: "Rush Mode", desc: "90초 · 연쇄로 시간 획득" },
+    { mode: "rush", title: "Rush Mode", desc: "120초 · 연쇄로 시간 획득" },
     { mode: "endless", title: "Endless Mode", desc: "시간 제한 없음 · 점점 빨라짐" },
   ];
   return (
@@ -338,7 +345,7 @@ function Overlay({ game }: { game: GameApi }) {
       return (
         <OverlayBox>
           <Logo />
-          <p className="max-w-52 font-sans text-[11px] leading-snug text-slate-200">같은 색 크리스털 4개를 이어 터뜨리고, 연쇄 반응으로 시간을 버세요!</p>
+          <p className="max-w-52 font-sans text-[11px] leading-snug text-slate-200">같은 색 크리스털 3개를 이어 터뜨리고, 연쇄 반응으로 시간을 버세요!</p>
           <ModeButtons game={game} />
           <button type="button" onClick={() => setHelp(true)} className={secondary}>
             How to Play
@@ -352,6 +359,14 @@ function Overlay({ game }: { game: GameApi }) {
             <dd className="tabular-nums text-amber-200">
               {records.endless.score.toLocaleString()} · {records.endless.maxChain} CHAIN
             </dd>
+            {records.classic && (
+              <>
+                <dt className="text-violet-300" title="이전 규칙(4개 연결·90초)으로 세운 기록">CLASSIC</dt>
+                <dd className="tabular-nums text-violet-200">
+                  {records.classic.rush.score.toLocaleString()} / {records.classic.endless.score.toLocaleString()}
+                </dd>
+              </>
+            )}
           </dl>
           <Link href="/" className="min-h-11 content-center font-sans text-[11px] text-violet-200 underline-offset-2 hover:underline">
             ← Back to Game Hub
@@ -421,9 +436,10 @@ function HowToPlay() {
       </div>
       <ul className="list-disc space-y-1 pl-4">
         <li>두 개가 붙은 크리스털이 떨어집니다. 좌우로 옮기고 돌려서 쌓으세요.</li>
-        <li>같은 색 4개 이상이 상하좌우로 이어지면 터집니다(대각선 제외).</li>
-        <li>터진 자리로 위 크리스털이 떨어져 새로 이어지면 연쇄! 연쇄마다 점수 배율이 두 배(×1·×2·×4·×8·×16…)가 됩니다.</li>
-        <li>Rush: 90초 제한. 3연쇄 +3초, 5연쇄 이상 +5초(최대 120초). 연쇄 중에는 시계가 멈춥니다.</li>
+        <li>같은 색 3개 이상이 상하좌우로 이어지면 터집니다(대각선 제외). 4개는 ×1.5, 5개 이상은 ×2 점수.</li>
+        <li>터진 자리로 위 크리스털이 떨어져 새로 이어지면 연쇄! 연쇄마다 점수 배율이 두 배(×1·×2·×4·×8, 5연쇄 이상 ×16)가 됩니다.</li>
+        <li>바닥에 닿은 뒤에도 잠깐(0.6초) 옮기거나 돌릴 수 있습니다.</li>
+        <li>Rush: 120초 제한. 3연쇄 +3초, 5연쇄 이상 +5초(최대 150초). 연쇄 중에는 시계가 멈춥니다.</li>
         <li>가운데 위 ✕ 칸이 막히면 Game Over.</li>
       </ul>
       <p className="text-violet-200">
@@ -433,58 +449,75 @@ function HowToPlay() {
   );
 }
 
+/** 누름 표시: React 상태 대신 data-pressed 속성을 바로 바꿔 다시 렌더링 없이 즉시 보이게 한다 */
+function setPressed(el: HTMLElement, on: boolean) {
+  if (on) el.dataset.pressed = "true";
+  else delete el.dataset.pressed;
+}
+
 /**
  * 터치 기기 전용 조작 버튼. 버튼마다 포인터를 따로 잡으므로 이동하면서 회전·낙하를 동시에 누를 수 있다(멀티터치).
- * ◀ ▶ ▼는 누르고 있으면 반복된다. 화면 확대·스크롤을 막기 위해 touch-none을 쓴다.
+ * ◀ ▶ ▼는 누르고 있으면 반복되고, 회전은 빠르게 연타한 횟수만큼 처리된다(input.ts). 모두 pointerdown에 바로 반응한다.
+ * 이동 · 회전 · 낙하 세 묶음 사이를 넓게 띄워 옆 버튼을 잘못 누르지 않게 한다. 화면 확대·스크롤을 막기 위해 touch-none을 쓴다.
  */
 function TouchControls({ controller, hud }: { controller: CascadeController; hud: HudState }) {
   const { input } = controller;
   const playing = hud.phase === "playing";
-  const hold = (source: string, onDown: () => void) => ({
-    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      event.currentTarget.setPointerCapture(event.pointerId);
-      onDown();
-    },
-    onPointerUp: () => input.release(source),
-    onPointerCancel: () => input.release(source),
-    onLostPointerCapture: () => input.release(source),
-    onContextMenu: (event: { preventDefault: () => void }) => event.preventDefault(),
-  });
-  const tap = (action: Press) => ({
-    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
-      event.preventDefault();
-      if (playing) input.trigger(action);
-    },
-    onContextMenu: (event: { preventDefault: () => void }) => event.preventDefault(),
-  });
-  const btn = "flex h-14 items-center justify-center rounded-xl border-2 text-lg select-none touch-none [-webkit-touch-callout:none] active:translate-y-px";
-  const blue = `${btn} border-violet-300/60 bg-violet-950/80 text-violet-100 active:bg-violet-800`;
-  const warm = `${btn} border-amber-300/70 bg-amber-900/40 text-amber-100 active:bg-amber-800/60`;
+  const press = (onDown: () => void, onUp?: () => void) => {
+    const up = (event: PointerEvent<HTMLButtonElement>) => {
+      setPressed(event.currentTarget, false);
+      onUp?.();
+    };
+    return {
+      onPointerDown: (event: PointerEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        setPressed(event.currentTarget, true);
+        onDown();
+      },
+      onPointerUp: up,
+      onPointerCancel: up,
+      onLostPointerCapture: up,
+      onContextMenu: (event: { preventDefault: () => void }) => event.preventDefault(),
+    };
+  };
+  const hold = (source: string, onDown: () => void) => press(onDown, () => input.release(source));
+  const tap = (action: Press) => press(() => playing && input.trigger(action));
+  const btn =
+    "flex h-14 flex-1 items-center justify-center rounded-xl border-2 text-lg select-none touch-none [-webkit-touch-callout:none] transition-transform duration-75 data-[pressed=true]:translate-y-0.5 data-[pressed=true]:scale-95";
+  const blue = `${btn} border-violet-300/70 bg-violet-950 text-violet-100 data-[pressed=true]:border-white data-[pressed=true]:bg-violet-600`;
+  const warm = `${btn} border-amber-300/80 bg-amber-950 text-amber-100 data-[pressed=true]:border-white data-[pressed=true]:bg-amber-600`;
+  const group = "flex flex-1 gap-1.5";
 
   return (
     <div
-      className="hidden touch-none grid-cols-6 gap-1.5 pointer-coarse:grid pointer-coarse:landscape:w-36 pointer-coarse:landscape:grid-cols-2"
+      className="hidden touch-none gap-3 pointer-coarse:flex pointer-coarse:landscape:w-36 pointer-coarse:landscape:flex-col"
       aria-label="터치 조작"
     >
-      <button type="button" aria-label="왼쪽으로 이동" className={blue} {...hold("t-left", () => input.pressMove("t-left", -1))}>
-        ◀
-      </button>
-      <button type="button" aria-label="오른쪽으로 이동" className={blue} {...hold("t-right", () => input.pressMove("t-right", 1))}>
-        ▶
-      </button>
-      <button type="button" aria-label="반시계 방향 회전" className={blue} {...tap("rotateCCW")}>
-        <RotateIcon dir={-1} />
-      </button>
-      <button type="button" aria-label="시계 방향 회전" className={blue} {...tap("rotateCW")}>
-        <RotateIcon dir={1} />
-      </button>
-      <button type="button" aria-label="빠른 낙하 (누르고 있기)" className={blue} {...hold("t-soft", () => input.setSoftDrop("t-soft", true))}>
-        ▼
-      </button>
-      <button type="button" aria-label="즉시 낙하" className={`${warm} text-[9px]`} {...tap("hardDrop")}>
-        DROP
-      </button>
+      <div className={group}>
+        <button type="button" aria-label="왼쪽으로 이동" className={blue} {...hold("t-left", () => input.pressMove("t-left", -1))}>
+          ◀
+        </button>
+        <button type="button" aria-label="오른쪽으로 이동" className={blue} {...hold("t-right", () => input.pressMove("t-right", 1))}>
+          ▶
+        </button>
+      </div>
+      <div className={group}>
+        <button type="button" aria-label="반시계 방향 회전" className={blue} {...tap("rotateCCW")}>
+          <RotateIcon dir={-1} />
+        </button>
+        <button type="button" aria-label="시계 방향 회전" className={blue} {...tap("rotateCW")}>
+          <RotateIcon dir={1} />
+        </button>
+      </div>
+      <div className={group}>
+        <button type="button" aria-label="빠른 낙하 (누르고 있기)" className={blue} {...hold("t-soft", () => input.setSoftDrop("t-soft", true))}>
+          ▼
+        </button>
+        <button type="button" aria-label="즉시 낙하" className={`${warm} text-[9px]`} {...tap("hardDrop")}>
+          DROP
+        </button>
+      </div>
     </div>
   );
 }

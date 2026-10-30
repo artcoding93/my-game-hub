@@ -95,7 +95,7 @@ export function applyGravity(board: Board): Fall[] {
   return falls;
 }
 
-/** 같은 색으로 상하좌우 연결된 그룹 중 POP_SIZE개 이상인 것 (BFS) */
+/** 같은 색으로 상하좌우 연결된 그룹 중 POP_SIZE(3)개 이상인 것 (BFS) */
 export function findGroups(board: Board, minSize = POP_SIZE): Crystal[][] {
   const seen = Array.from({ length: ROWS }, () => Array<boolean>(COLS).fill(false));
   const groups: Crystal[][] = [];

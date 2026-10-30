@@ -79,6 +79,18 @@ describe("14. 모바일 조작 (터치 버튼과 키보드가 같은 입력 상�
     assert.ok(placed <= (s.pairs - (s.active ? 1 : 0)) * 2);
   });
 
+  test("게임이 끝나면 누르고 있던 버튼·남은 회전이 지워진다", () => {
+    const c = playingController();
+    c.input.pressMove("t-left", -1);
+    c.input.setSoftDrop("t-soft", true);
+    c.input.trigger("rotateCW");
+    c.input.trigger("rotateCW");
+    c.state.timeLeft = 0.01;
+    c.update(1 / 30);
+    assert.equal(c.state.phase, "over");
+    assert.deepEqual(c.input.take(), { move: 0, softDrop: false, rotateCW: false, rotateCCW: false, hardDrop: false });
+  });
+
   test("일시정지 중 버튼 입력은 쌓이지 않는다", () => {
     const c = playingController();
     c.togglePause();
@@ -112,7 +124,7 @@ describe("구현 품질", () => {
   test("HUD: 남은 시간·점수·다음 쌍·속도, 결과 화면에서 모드 선택으로", () => {
     const c = playingController();
     const hud = c.getHud();
-    assert.equal(hud.seconds, 90);
+    assert.equal(hud.seconds, 120);
     assert.equal(hud.next.length, 2);
     assert.equal(hud.speed, 1);
     c.state.board = emptyBoard();

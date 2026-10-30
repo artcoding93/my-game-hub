@@ -9,16 +9,18 @@ import {
   type GameMode,
 } from "../config";
 import type { Color, GameEvent, GameState, InputSnapshot, Pair } from "../types";
-import { applyGravity, dropDistance, emptyBoard, findGroups, fits, pairCells, place, rotate, shifted } from "./board";
+import { applyGravity, dropDistance, emptyBoard, findGroups, fits, landingCells, pairCells, place, rotate, shifted } from "./board";
 import { shuffle } from "./rng";
 
 /*
  * Cascade Rush 상태 전이 (순수 TypeScript, 고정 시간 간격으로 호출).
  *
- * 한 쌍의 순서: 생성 → 이동·회전·낙하 → 착지(고정) → 중력(갈라진 크리스털 낙하) → [4개 이상 연결 터짐 → 중력]* → 연쇄 끝 → 다음 쌍
+ * 한 쌍의 순서: 생성 → 이동·회전·낙하 → 착지(고정) → 중력(갈라진 크리스털 낙하) → [3개 이상 연결 터짐 → 중력]* → 연쇄 끝 → 다음 쌍
  * - 연쇄 처리(resolve) 중에는 입력·새 쌍 생성·타이머·낙하 속도 시간이 모두 멈춘다. 그동안 눌린 회전·즉시 낙하는 버린다.
  * - 시간 보너스는 연쇄가 끝날 때 한 번만, 가장 큰 보너스 하나만 준다(resolveId로 중복 지급 방지).
  * - 낙하 속도는 실제 조작 시간(playTime)으로 정하므로 보너스로 남은 시간이 늘어도 느려지지 않는다.
+ * - 착지 유예(lockDelay): 바닥에 닿아 있는 동안만 시간이 흐르고, 이동·회전으로 maxLockResets번까지 미룰 수 있다.
+ *   더 낮은 줄에 닿기 전에는 대기 시간·횟수가 다시 채워지지 않는다(회전으로 들어 올렸다 내리는 무한 지연 방지).
  */
 
 const QUEUE_SIZE = 2;
@@ -40,6 +42,7 @@ export function createGame(mode: GameMode = "rush", seed = 1): GameState {
     gravityTimer: 0,
     lockTimer: 0,
     lockResets: 0,
+    lowestY: 0,
     moveDir: 0,
     dasTimer: 0,
     resolve: null,
@@ -91,6 +94,7 @@ function spawn(state: GameState, events: GameEvent[]) {
   state.gravityTimer = 0;
   state.lockTimer = 0;
   state.lockResets = 0;
+  state.lowestY = pair.y;
   // 이동 키를 누른 채 다음 쌍이 나오면 첫 반복 시간(DAS)부터 다시 센다
   state.dasTimer = GAME_CONFIG.das;
   events.push({ type: "spawn" });
@@ -205,7 +209,11 @@ function control(state: GameState, input: InputSnapshot, dt: number, events: Gam
     }
     state.gravityTimer -= interval;
     state.active = down;
-    state.lockTimer = 0;
+    if (down.y > state.lowestY) {
+      state.lowestY = down.y;
+      state.lockTimer = 0;
+      state.lockResets = 0;
+    }
     if (input.softDrop) events.push({ type: "softStep" });
   }
 
@@ -236,9 +244,10 @@ function resetLock(state: GameState) {
 function lock(state: GameState, hard: boolean, events: GameEvent[]) {
   const pair = state.active!;
   state.active = null;
+  const landed = landingCells(state.board, pair).filter((c) => c.y >= 0);
   const cells = place(state.board, pairCells(pair));
   state.resolveId++;
-  events.push({ type: "land", hard, cells });
+  events.push({ type: "land", hard, cells, crystals: landed });
   state.resolve = { stage: "drop", timer: 0, duration: 0, chain: 0, total: 0, falls: [], popping: [] };
   startDrop(state, events);
 }
@@ -270,7 +279,8 @@ function checkGroups(state: GameState, events: GameEvent[]) {
   // 동시에 터지는 여러 그룹은 하나의 연쇄 단계
   r.chain++;
   const crystals = groups.flat();
-  const points = chainStepPoints(crystals.length, r.chain);
+  const sizes = groups.map((g) => g.length);
+  const points = chainStepPoints(sizes, r.chain);
   r.total += points;
   state.score += points;
   state.crystals += crystals.length;
@@ -279,7 +289,7 @@ function checkGroups(state: GameState, events: GameEvent[]) {
   r.falls = [];
   r.timer = 0;
   r.duration = GAME_CONFIG.popTime;
-  events.push({ type: "pop", chain: r.chain, crystals, groups: groups.length, points });
+  events.push({ type: "pop", chain: r.chain, crystals, groups: groups.length, sizes, points });
 }
 
 function advanceResolve(state: GameState, dt: number, events: GameEvent[]) {

@@ -36,7 +36,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `npm run test:frosty-roll` | Frosty Roll 자동화 테스트 (눈 누적·연쇄·낙하·동시 굴림·탈출·보스·아이템 제한·적 안정성, 실제 점프 물리 도달 가능성, 자동 플레이로 5스테이지 클리어, 사운드) |
 | `npm run test:bubble-pop-adventure` | Bubble Pop Adventure 자동화 테스트 (방울 발사·포획·상승·천장 모임·바람, 연쇄 터짐·콤보, 방울 밟기, 아이템·Time Freeze, 보스, 적 안정성, 실제 점프 물리로 발판·적·모이는 지점 도달, 자동 플레이로 5스테이지 클리어, 사운드) |
 | `npm run test:cargo-bot` | Cargo Bot 자동화 테스트 (이동·밀기 규칙, 컨베이어·얼음·순간이동·우선순위·무한 루프 방지, Undo/Redo/Restart·빠른 입력, 15개 스테이지 상태 공간 탐색 검증·해답 재생·기믹 필요성, 힌트, 저장, 입력 반복, 사운드) |
-| `npm run test:cascade-rush` | Cascade Rush 자동화 테스트 (이동·회전·벽/바닥 밀어내기, 빠른·즉시 낙하, 4개 연결 제거·BFS, 2~6연쇄 보드, 점수 배율, 시간 보너스·중복 방지·120초 상한, 연쇄 중 타이머 정지, 시간 종료·천장 Game Over, 일시정지, Endless, 터치 입력, 기록 저장, 사운드) |
+| `npm run test:cascade-rush` | Cascade Rush 자동화 테스트 (이동·회전·벽/바닥 밀어내기, 빠른·즉시 낙하, 착지 유예·악용 방지, 3개 연결 제거·BFS, 2~6연쇄 보드, 연결 보너스·연쇄 배율, 시간 보너스·중복 방지·150초 상한, 연쇄 중 타이머 정지, 시간 종료·천장 Game Over, 일시정지, Endless 속도 완화, 다음 2쌍, 터치 입력·회전 연타, 기록 저장·이전 규칙 기록 보존, 사운드) |
 | `npm run test:lost-relic` | Lost Relic 자동화 테스트 (Node 내장 테스트 러너, `scripts/ts-test-hooks.mjs`로 TS 직접 실행) |
 
 작업을 마치기 전에 `npm run lint`와 `npm run build`가 모두 통과해야 한다.
@@ -124,9 +124,9 @@ src/
       logic/                 # 순수 TS: level(지도 해석), engine(이동·특수 타일·데드락), session(Undo/Redo/Restart), solver(BFS 검증·힌트), hint, *.test.ts
       save.ts, config.ts, input.ts(키·D-pad 반복), useCargoBot.ts, CargoBotGame.tsx, render/(pixels·sprites·renderer), audio/(sfx·music 2곡·CargoAudio)
     cascade-rush/            # Canvas 2D 실시간 낙하형 연쇄 퍼즐 (아래 "Cascade Rush" 참고)
-      config.ts              # 보드 6×12·색 5종·낙하 속도표(Rush 3단계·Endless 7단계)·시간 보너스·점수 배율·연출 시간·저장 키
+      config.ts              # 보드 6×12·색 5종·3개 연결·낙하 속도표(Rush 5단계·Endless 7단계)·착지 유예·시간 보너스·연결 보너스·연쇄 배율·연출 시간·저장 키
       logic/                 # 순수 TS: board(회전·밀어내기·중력·BFS 그룹·착지 미리보기), game(상태 전이·연쇄·타이머), rng, game.test.ts(2~6연쇄 보드)
-      records.ts             # 모드별 기록 저장 형식·검증
+      records.ts             # 모드별 기록 저장 형식·검증 (v1 4개 연결 기록은 classic으로 보존)
       controller.ts, input.ts, useCascadeRush.ts, CascadeRushGame.tsx, render/(crystals·renderer), audio/(sfx·music·CascadeAudio)
   lib/
     audio/                   # 공용 8비트 사운드: synth(톤·노이즈·VoiceTracker·createAudioContext), loopPlayer(look-ahead BGM 재생기),
@@ -288,15 +288,21 @@ public/games/<slug>/         # 게임별 썸네일(thumbnail.svg 등), sounds/
 
 
 ### Cascade Rush (Canvas 2D)
-- 규칙은 `logic/`에만 둔다. 한 쌍의 순서: 생성 → 이동·회전·낙하 → 고정 → 중력 → [4개 이상 연결 터짐 → 중력]* → 연쇄 끝 → 다음 쌍.
+- 규칙은 `logic/`에만 둔다. 한 쌍의 순서: 생성 → 이동·회전·낙하 → 고정 → 중력 → [3개 이상 연결 터짐 → 중력]* → 연쇄 끝 → 다음 쌍.
   연쇄 처리(`GameState.resolve`) 중에는 입력을 버리고, 새 쌍 생성·남은 시간·조작 시간(`playTime`)이 모두 멈춘다.
-- 연결은 상하좌우만(대각선 제외), `logic/board.ts`의 `findGroups`(BFS). 동시에 터진 그룹은 같은 연쇄 단계. 점수 = 개수 × 10 × 2^(연쇄−1).
-- 시간 보너스는 연쇄가 끝날 때 한 번만, 가장 큰 것 하나(3연쇄 +3초, 5연쇄 +5초, 상한 120초). `bonusPaidFor`/`resolveId`로 중복 지급을 막는다.
-- 낙하 속도는 남은 시간이 아니라 `playTime`(줄지 않음)으로 정한다. 속도표·시간·점수 값은 `config.ts`에서만 바꾸고, 바꾸면 `src/data/games.ts`의 설명도 맞춘다.
+- 연결은 상하좌우만(대각선 제외), `logic/board.ts`의 `findGroups`(BFS, `POP_SIZE` = 3). 동시에 터진 그룹은 같은 연쇄 단계.
+  점수 = Σ그룹(개수 × 10 × 연결 보너스[3개 ×1, 4개 ×1.5, 5개+ ×2]) × 연쇄 배율(×1·×2·×4·×8, 5연쇄 이상 ×16).
+- 시간 보너스는 연쇄가 끝날 때 한 번만, 가장 큰 것 하나(3연쇄 +3초, 5연쇄 +5초, 시작 120초·상한 150초). `bonusPaidFor`/`resolveId`로 중복 지급을 막는다.
+- 낙하 속도는 남은 시간이 아니라 `playTime`(줄지 않음)으로 정한다. `gravity`는 칸당 간격(초)이므로 속도를 x배로 하려면 간격을 ÷x 한다.
+  속도표·시간·점수 값은 `config.ts`에서만 바꾸고, 바꾸면 `src/data/games.ts`의 설명도 맞춘다.
+- 착지 유예 `lockDelay`(0.6초)는 바닥에 닿아 있는 동안만 흐르고 이동·회전으로 `maxLockResets`번까지 미룬다. 횟수·시간은 더 낮은 줄(`lowestY`)에 닿을 때만 다시 채운다(무한 지연 방지).
+- 입력: 회전은 누른 횟수만큼(최대 3) 한 스텝에 하나씩 전달, 즉시 낙하는 스텝당 한 번. 게임 종료·일시정지 때 입력 상태를 지운다.
 - Game Over: 생성 칸(`SPAWN_X`·`SPAWN_Y` = 3열·위에서 두 번째 줄, ✕ 표시)이나 그 위 칸이 막히면. 천장 위로 넘친 크리스털은 사라진다.
 - 난수는 `GameState.rng`(시드, 색마다 4개씩 섞은 20개 묶음)만 쓴다. `Math.random()`은 renderer 연출과 시드 생성에만 쓴다. 화면 흔들림은 renderer가 설정(보통·약하게·끔)에 따라 적용한다.
+- 그래픽 선명도: 크리스털(`render/crystals.ts`)은 모두 같은 팔각 컷 + 색별 가운데 무늬, 불투명 면·외곽선만 쓴다. 블러·shadowBlur·CSS filter blur를 쓰지 않고,
+  크리스털은 기기 픽셀에 맞춰 그린다. 별빛·착지 반짝임은 짧게만, `prefers-reduced-motion`이면 별빛·번쩍임·흔들림을 끄고 파편을 줄인다.
 - 연쇄 테스트 보드(`game.test.ts`의 `CHAIN_BOARDS`)는 실제 엔진으로 연쇄 수를 확인한 배치다. 규칙을 바꾸면 `npm run test:cascade-rush`로 다시 확인한다.
-- 저장: `my-game-hub:cascade-rush:records`(Rush·Endless 모드별 최고 점수·최대 연쇄·크리스털 수, 형식을 바꾸면 `RECORDS_VERSION`을 올림), `:sound`, `:music`, `:shake`.
+- 저장: `my-game-hub:cascade-rush:records`(Rush·Endless 모드별 최고 점수·최대 연쇄·크리스털 수, 형식을 바꾸면 `RECORDS_VERSION`을 올림. 현재 v2이며 v1(4개 연결) 기록은 `classic`으로 옮겨 지우지 않음), `:sound`, `:music`, `:shake`.
   효과음·BGM 기본 꺼짐. 개발 서버에서만 `window.__CASCADE_RUSH__` 노출.
 - 저작권: 낙하형 연쇄 퍼즐 장르의 일반 규칙만 참고했다. 크리스털·배경 그림(`render/`), BGM "Crystal Rush"와 효과음은 모두 자체 제작이며 외부 에셋이 없다.
   다른 게임의 이름·캐릭터·그래픽·음악을 쓰지 않고, 게임 설명·키워드에도 다른 게임의 상표명을 쓰지 않는다. 정식 공개 전 "Cascade Rush" 상표 중복을 확인한다.

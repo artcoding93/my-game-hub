@@ -60,7 +60,7 @@ export interface GameState {
   resumePhase: "ready" | "playing";
   board: Board;
   active: Pair | null;
-  /** 다음 쌍 [pivot, child] (앞에서부터) */
+  /** 다음 쌍 [pivot, child] (앞에서부터, 화면에는 앞의 두 쌍을 보여 준다) */
   queue: [Color, Color][];
   bag: [Color, Color][];
   rng: number;
@@ -75,6 +75,8 @@ export interface GameState {
   gravityTimer: number;
   lockTimer: number;
   lockResets: number;
+  /** 지금 쌍이 내려간 가장 낮은 줄. 더 낮은 줄에 닿을 때만 고정 대기 시간·횟수를 다시 채운다 */
+  lowestY: number;
   /** 길게 누를 때 반복 이동 */
   moveDir: -1 | 0 | 1;
   dasTimer: number;
@@ -109,9 +111,11 @@ export type GameEvent =
   | { type: "move" }
   | { type: "rotate" }
   | { type: "softStep" }
-  | { type: "land"; hard: boolean; cells: number }
+  /** crystals: 갈라져 떨어지는 경우까지 반영한 최종 자리 (착지 반짝임용) */
+  | { type: "land"; hard: boolean; cells: number; crystals: Crystal[] }
   | { type: "settle" }
-  | { type: "pop"; chain: number; crystals: Crystal[]; groups: number; points: number }
+  /** sizes: 동시에 터진 그룹마다의 크기 */
+  | { type: "pop"; chain: number; crystals: Crystal[]; groups: number; sizes: number[]; points: number }
   | { type: "chainEnd"; chain: number; total: number; bonus: number }
   | { type: "timeBonus"; seconds: number }
   | { type: "countdown"; seconds: number }

@@ -34,5 +34,22 @@ describe("기록 저장 (localStorage)", () => {
     const half = parseRecords(JSON.stringify({ version: RECORDS_VERSION, rush: { score: 10, maxChain: 1, crystals: 4 }, endless: "x" }));
     assert.equal(half.rush.score, 10);
     assert.equal(half.endless.score, 0);
+    // 3개 연결 규칙에서는 연쇄 수가 24(72칸 ÷ 3)까지 가능하다
+    assert.equal(parseRecords(JSON.stringify({ version: RECORDS_VERSION, rush: { score: 10, maxChain: 20, crystals: 60 } })).rush.maxChain, 20);
+  });
+
+  test("이전 규칙(v1: 4개 연결) 기록은 지우지 않고 CLASSIC으로 따로 보관한다", () => {
+    const v1 = JSON.stringify({ version: 1, rush: { score: 4200, maxChain: 5, crystals: 80 }, endless: { score: 900, maxChain: 3, crystals: 20 } });
+    const parsed = parseRecords(v1);
+    assert.deepEqual(parsed.rush, { score: 0, maxChain: 0, crystals: 0 }, "새 규칙 기록과 섞지 않음");
+    assert.deepEqual(parsed.classic, { rush: { score: 4200, maxChain: 5, crystals: 80 }, endless: { score: 900, maxChain: 3, crystals: 20 } });
+    // 새 기록을 저장해도 CLASSIC은 그대로 남는다
+    const next = recordResult(parsed, "rush", { score: 300, maxChain: 2, crystals: 9 });
+    assert.equal(next.newBest, true);
+    const reloaded = parseRecords(serializeRecords(next.records));
+    assert.equal(reloaded.rush.score, 300);
+    assert.deepEqual(reloaded.classic, parsed.classic);
+    // 빈 v1 기록은 CLASSIC을 만들지 않는다
+    assert.equal(parseRecords(JSON.stringify({ version: 1, rush: { score: 0, maxChain: 0, crystals: 0 } })).classic, null);
   });
 });

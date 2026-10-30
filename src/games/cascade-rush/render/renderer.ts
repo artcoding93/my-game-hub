@@ -1,12 +1,13 @@
 import { chainLabel, chainMultiplier, COLS, GAME_CONFIG, ROWS, SPAWN_X, SPAWN_Y } from "../config";
 import { landingCells, pairCells } from "../logic/board";
 import type { Color, Crystal, GameEvent, GameState } from "../types";
-import { CRYSTALS, CrystalCache } from "./crystals";
+import { CRYSTALS, CrystalCache, paintSparkle } from "./crystals";
 
 /*
  * 보드 캔버스 그리기 (상태를 읽기만 하고 바꾸지 않는다).
  * 내부 해상도 192×384(칸 32px) × devicePixelRatio로 그리고, 화면 크기는 CSS로 맞춘다.
- * 연출(파편·연쇄 문구·화면 흔들림)은 게임 이벤트를 받아 여기서만 만든다. Math.random()은 연출에만 쓴다.
+ * 연출(파편·연쇄 문구·화면 흔들림·별빛)은 게임 이벤트를 받아 여기서만 만든다. Math.random()은 연출에만 쓴다.
+ * 선명도: 블러·shadowBlur를 쓰지 않고, 크리스털은 기기 픽셀에 맞춰 그린다. 빛 효과는 짧게 나타났다 사라지는 것만 쓴다.
  */
 
 export const CELL = 32;
@@ -55,10 +56,23 @@ export interface RenderOptions {
   /** 화면 흔들림 배율 (0 = 끔, 0.4 = 약하게, 1 = 보통) */
   shake: number;
   font: string;
+  /** 운영체제의 "동작 줄이기" 설정: 별빛·화면 번쩍임을 끄고 파편을 줄인다 */
+  reducedMotion: boolean;
 }
 
-const MAX_PARTICLES = 420;
+const MAX_PARTICLES = 360;
+/** 착지 반짝임 시간 */
+const LAND_FLASH = 0.12;
+/** 별빛 반짝임: 크리스털마다 2~4초 간격으로 TWINKLE_TIME 동안 */
+const TWINKLE_TIME = 0.32;
 const ease = (t: number) => t * t;
+
+/** 칸마다 고정된 의사 난수 (별빛 주기·위상). 렌더링마다 같은 값이 나와야 하므로 Math.random()을 쓰지 않는다 */
+function cellHash(x: number, y: number, color: number): number {
+  let h = (x * 374761393 + y * 668265263 + color * 2246822519) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
 
 export class CascadeRenderer {
   private crystals = new CrystalCache();
@@ -69,11 +83,15 @@ export class CascadeRenderer {
   private flash = 0;
   private flashColor = "#ffffff";
   private clock = 0;
+  /** 착지한 칸("x,y") → 지난 시간 */
+  private landed = new Map<string, number>();
+  private reducedMotion = false;
 
   /** 게임 이벤트 → 연출 */
   handle(events: readonly GameEvent[]) {
     for (const e of events) {
-      if (e.type === "pop") this.onPop(e.chain, e.crystals, e.points);
+      if (e.type === "pop") this.onPop(e.chain, e.crystals, e.sizes, e.points);
+      else if (e.type === "land") this.onLand(e.crystals);
       else if (e.type === "chainEnd" && e.chain >= 2)
         this.popups.push({ kind: "total", text: `+${e.total.toLocaleString("en-US")}`, sub: `${e.chain} CHAIN`, x: BOARD_W / 2, y: BOARD_H * 0.42, age: 0, life: 1.3, size: 14, color: "#fff3bd" });
       else if (e.type === "timeBonus")
@@ -85,36 +103,80 @@ export class CascadeRenderer {
   reset() {
     this.particles = [];
     this.popups = [];
+    this.landed.clear();
     this.shakeTime = 0;
     this.flash = 0;
   }
 
-  private onPop(chain: number, crystals: Crystal[], points: number) {
-    const level = Math.min(chain, 5);
-    const perCrystal = Math.min(5 + level * 3, Math.floor((MAX_PARTICLES - this.particles.length) / Math.max(crystals.length, 1)));
+  /** 착지: 0.1초 남짓 밝게 반짝이고 작은 별빛 몇 개가 튄다 (흔들림 없음) */
+  private onLand(crystals: Crystal[]) {
     for (const c of crystals) {
-      const cx = c.x * CELL + CELL / 2;
-      const cy = c.y * CELL + CELL / 2;
-      const style = CRYSTALS[c.color];
-      for (let i = 0; i < perCrystal; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 40 + Math.random() * (60 + level * 40);
-        const spark = i % 3 === 0;
+      this.landed.set(`${c.x},${c.y}`, 0);
+      if (this.reducedMotion || this.particles.length > MAX_PARTICLES - 4) continue;
+      for (let i = 0; i < 3; i++) {
+        const dir = i - 1;
         this.particles.push({
-          kind: spark ? "spark" : "shard",
-          x: cx,
-          y: cy,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 30,
-          rot: Math.random() * Math.PI,
-          vr: (Math.random() - 0.5) * 14,
-          size: spark ? 2 + Math.random() * 2 : 3 + Math.random() * (2 + level),
+          kind: "spark",
+          x: c.x * CELL + CELL / 2 + dir * CELL * 0.3,
+          y: (c.y + 1) * CELL - 3,
+          vx: dir * (30 + Math.random() * 25),
+          vy: -30 - Math.random() * 30,
+          rot: 0,
+          vr: 0,
+          size: 1.5 + Math.random(),
           life: 0,
-          max: 0.45 + Math.random() * (0.3 + level * 0.08),
-          color: spark ? style.glow : i % 2 ? style.main : style.light,
+          max: 0.22 + Math.random() * 0.1,
+          color: CRYSTALS[c.color].light,
         });
       }
-      this.particles.push({ kind: "ring", x: cx, y: cy, vx: 0, vy: 0, rot: 0, vr: 0, size: CELL * (0.6 + level * 0.15), life: 0, max: 0.35, color: style.glow });
+    }
+  }
+
+  /**
+   * 폭발 연출. 연쇄 단계(chain)가 높을수록, 그룹이 클수록(4개 강화 · 5개 이상 대형) 파편이 많고 멀리 튄다.
+   * crystals는 그룹 순서대로 이어 붙인 목록이고 sizes[i]가 i번째 그룹의 크기다.
+   */
+  private onPop(chain: number, crystals: Crystal[], sizes: readonly number[], points: number) {
+    const level = Math.min(chain, 5);
+    const budget = Math.floor((MAX_PARTICLES - this.particles.length) / Math.max(crystals.length, 1));
+    let start = 0;
+    for (const size of sizes.length ? sizes : [crystals.length]) {
+      const group = crystals.slice(start, start + size);
+      start += size;
+      const big = size >= 5 ? 2 : size >= 4 ? 1 : 0;
+      const wanted = 3 + level * 2 + big * 2;
+      const perCrystal = Math.max(0, Math.min(this.reducedMotion ? Math.ceil(wanted / 2) : wanted, budget));
+      for (const c of group) {
+        const cx = c.x * CELL + CELL / 2;
+        const cy = c.y * CELL + CELL / 2;
+        const style = CRYSTALS[c.color];
+        for (let i = 0; i < perCrystal; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 40 + Math.random() * (50 + level * 30 + big * 25);
+          const spark = i % 3 === 0;
+          this.particles.push({
+            kind: spark ? "spark" : "shard",
+            x: cx,
+            y: cy,
+            vx: Math.cos(angle) * speed,
+            // 위로 너무 높이 튀어 다음 크리스털이 나오는 자리를 가리지 않도록 위쪽 속도를 줄인다
+            vy: Math.sin(angle) * speed * (Math.sin(angle) < 0 ? 0.7 : 1) - 20,
+            rot: Math.random() * Math.PI,
+            vr: (Math.random() - 0.5) * 14,
+            size: spark ? 2 + Math.random() * 1.5 : 2.5 + Math.random() * (1.5 + level * 0.5 + big),
+            life: 0,
+            max: 0.35 + Math.random() * (0.2 + level * 0.06 + big * 0.05),
+            color: spark ? "#ffffff" : i % 2 ? style.main : style.light,
+          });
+        }
+        this.particles.push({ kind: "ring", x: cx, y: cy, vx: 0, vy: 0, rot: 0, vr: 0, size: CELL * (0.55 + level * 0.1 + big * 0.1), life: 0, max: 0.3, color: style.light });
+      }
+      if (big === 2 && group.length > 0) {
+        // 대형 폭발: 그룹 가운데에서 크게 퍼지는 고리 하나
+        const gx = (group.reduce((s, c) => s + c.x, 0) / group.length + 0.5) * CELL;
+        const gy = (group.reduce((s, c) => s + c.y, 0) / group.length + 0.5) * CELL;
+        this.particles.push({ kind: "ring", x: gx, y: gy, vx: 0, vy: 0, rot: 0, vr: 0, size: CELL * (1.6 + level * 0.2), life: 0, max: 0.42, color: CRYSTALS[group[0].color].light });
+      }
     }
     const cx = crystals.reduce((s, c) => s + c.x, 0) / crystals.length;
     const cy = crystals.reduce((s, c) => s + c.y, 0) / crystals.length;
@@ -134,12 +196,19 @@ export class CascadeRenderer {
     for (const p of this.popups) if (p.kind === "combo" && p.text !== label) p.age = Math.max(p.age, p.life - 0.15);
     this.shakePower = Math.max(this.shakePower * (this.shakeTime > 0 ? 1 : 0), GAME_CONFIG.shake[level]);
     this.shakeTime = 0.12 + level * 0.04;
-    this.flash = 0.1 + level * 0.07;
-    this.flashColor = CRYSTALS[crystals[0].color].glow;
+    // 보드 번쩍임은 3연쇄부터 아주 짧고 옅게만 (동작 줄이기 설정이면 없음)
+    if (level >= 3 && !this.reducedMotion) {
+      this.flash = 0.06 + (level - 3) * 0.03;
+      this.flashColor = CRYSTALS[crystals[0].color].light;
+    }
   }
 
   private update(dt: number) {
     this.clock += dt;
+    for (const [key, age] of this.landed) {
+      if (age + dt >= LAND_FLASH) this.landed.delete(key);
+      else this.landed.set(key, age + dt);
+    }
     for (const p of this.particles) {
       p.life += dt;
       if (p.kind === "ring") continue;
@@ -159,10 +228,11 @@ export class CascadeRenderer {
 
   /** dt: 연출을 진행할 시간 (일시정지 중에는 0) */
   render(ctx: CanvasRenderingContext2D, state: GameState, dt: number, opts: RenderOptions) {
+    this.reducedMotion = opts.reducedMotion;
     this.update(dt);
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     ctx.save();
-    if (this.shakeTime > 0 && opts.shake > 0) {
+    if (this.shakeTime > 0 && opts.shake > 0 && !opts.reducedMotion) {
       const m = this.shakePower * opts.shake * (this.shakeTime / 0.3 + 0.3);
       ctx.translate(Math.round((Math.random() - 0.5) * 2 * m), Math.round((Math.random() - 0.5) * 2 * m));
     }
@@ -177,25 +247,14 @@ export class CascadeRenderer {
   }
 
   private drawBackground(ctx: CanvasRenderingContext2D, state: GameState) {
+    // 보석과 명도 대비가 크도록 거의 단색인 어두운 보라 (장식 없음)
     const bg = ctx.createLinearGradient(0, 0, 0, BOARD_H);
-    bg.addColorStop(0, "#140a33");
-    bg.addColorStop(1, "#22104a");
+    bg.addColorStop(0, "#0f0826");
+    bg.addColorStop(1, "#160b33");
     ctx.fillStyle = bg;
     ctx.fillRect(-8, -8, BOARD_W + 16, BOARD_H + 16);
-    // 동굴 벽의 희미한 결정 무늬
-    ctx.fillStyle = "rgba(167, 139, 250, 0.06)";
-    for (let i = 0; i < 9; i++) {
-      const x = (i * 53) % BOARD_W;
-      const y = BOARD_H - 30 - ((i * 97) % 220);
-      ctx.beginPath();
-      ctx.moveTo(x, y - 18);
-      ctx.lineTo(x + 7, y);
-      ctx.lineTo(x, y + 18);
-      ctx.lineTo(x - 7, y);
-      ctx.fill();
-    }
-    // 격자
-    ctx.strokeStyle = "rgba(196, 181, 253, 0.07)";
+    // 격자: 은은하지만 칸과 낙하 경로를 구별할 수 있게
+    ctx.strokeStyle = "#2a1b52";
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let x = 1; x < COLS; x++) {
@@ -208,7 +267,7 @@ export class CascadeRenderer {
     }
     ctx.stroke();
     if (this.flash > 0) {
-      ctx.globalAlpha = Math.min(this.flash * 1.2, 0.35);
+      ctx.globalAlpha = Math.min(this.flash * 1.5, 0.14);
       ctx.fillStyle = this.flashColor;
       ctx.fillRect(0, 0, BOARD_W, BOARD_H);
       ctx.globalAlpha = 1;
@@ -245,16 +304,14 @@ export class CascadeRenderer {
     }
     const settled = (x: number, y: number) => !falling.has(`${x},${y}`) && !popping.has(`${x},${y}`);
 
-    // 같은 색끼리 이어진 칸은 연결선을 그려 그룹을 읽기 쉽게 한다
+    // 같은 색끼리 이어진 칸은 불투명한 짧은 다리로 이어 그룹을 읽기 쉽게 한다 (반투명 겹치기 없음)
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
         const c = state.board[y][x];
         if (!c || !settled(x, y)) continue;
-        ctx.fillStyle = CRYSTALS[c].main;
-        ctx.globalAlpha = 0.45;
-        if (x + 1 < COLS && state.board[y][x + 1] === c && settled(x + 1, y)) ctx.fillRect(x * CELL + CELL / 2, y * CELL + CELL / 2 - 4, CELL, 8);
-        if (y + 1 < ROWS && state.board[y + 1][x] === c && settled(x, y + 1)) ctx.fillRect(x * CELL + CELL / 2 - 4, y * CELL + CELL / 2, 8, CELL);
-        ctx.globalAlpha = 1;
+        ctx.fillStyle = CRYSTALS[c].dark;
+        if (x + 1 < COLS && state.board[y][x + 1] === c && settled(x + 1, y)) ctx.fillRect(x * CELL + CELL / 2, y * CELL + CELL / 2 - 3, CELL, 6);
+        if (y + 1 < ROWS && state.board[y + 1][x] === c && settled(x, y + 1)) ctx.fillRect(x * CELL + CELL / 2 - 3, y * CELL + CELL / 2, 6, CELL);
       }
     }
 
@@ -268,34 +325,68 @@ export class CascadeRenderer {
           const blink = popProgress < 0.6 && Math.floor(popProgress * 14) % 2 === 0;
           const scale = popProgress < 0.6 ? 1 + popProgress * 0.25 : Math.max(1.15 - (popProgress - 0.6) * 2.9, 0);
           this.drawCrystal(ctx, c, x * CELL, y * CELL, dpr, { white: blink, scale });
-        } else {
-          const fy = falling.get(key);
-          this.drawCrystal(ctx, c, x * CELL, (fy ?? y) * CELL, dpr);
+          continue;
+        }
+        const fy = falling.get(key);
+        const py = (fy ?? y) * CELL;
+        this.drawCrystal(ctx, c, x * CELL, py, dpr);
+        const landAge = this.landed.get(key);
+        if (landAge !== undefined) {
+          // 착지 반짝임: 흰 크리스털을 잠깐 겹쳤다가 사라지게
+          ctx.globalAlpha = 0.75 * (1 - landAge / LAND_FLASH);
+          this.drawCrystal(ctx, c, x * CELL, py, dpr, { white: true });
+          ctx.globalAlpha = 1;
+        } else if (fy === undefined && !this.reducedMotion) {
+          this.drawTwinkle(ctx, x, y, c);
         }
       }
     }
   }
 
+  /** 별빛: 크리스털마다 2~4초 간격으로 0.3초 정도 작은 흰 별이 반짝이고, 윗모서리를 따라 짧은 빛줄기가 지나간다 */
+  private drawTwinkle(ctx: CanvasRenderingContext2D, x: number, y: number, color: Color) {
+    const h = cellHash(x, y, color);
+    const period = 2 + h * 2;
+    const t = (this.clock + h * 97) % period;
+    if (t > TWINKLE_TIME) return;
+    const p = t / TWINKLE_TIME;
+    const k = Math.sin(p * Math.PI);
+    const left = x * CELL;
+    const top = y * CELL;
+    const star = 2 + k * CELL * 0.14;
+    const corner = h < 0.5;
+    paintSparkle(ctx, left + CELL * (corner ? 0.3 : 0.7), top + CELL * (corner ? 0.3 : 0.24), star);
+    // 윗모서리 빛줄기 (외곽선 바로 안쪽, 왼쪽 → 오른쪽)
+    const edgeY = top + CELL * 0.17;
+    const from = left + CELL * 0.33;
+    const span = CELL * 0.34;
+    const head = from + span * p;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(Math.max(head - CELL * 0.14, from), edgeY, Math.min(CELL * 0.14, head - from) + 0.01, 1.5);
+  }
+
   private drawActive(ctx: CanvasRenderingContext2D, state: GameState, dpr: number) {
     const pair = state.active!;
-    // 떨어질 자리 미리보기 (갈라지는 경우도 표시)
+    // 떨어질 자리 미리보기 (Ghost, 갈라지는 경우도 표시): 얇은 점선 외곽선 + 가운데 작은 색 점. 채우기·발광 없음
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
     for (const c of landingCells(state.board, pair)) {
       if (c.y < 0) continue;
-      ctx.strokeStyle = CRYSTALS[c.color].glow;
-      ctx.globalAlpha = 0.55;
-      ctx.setLineDash([4, 3]);
-      ctx.lineWidth = 2;
-      ctx.strokeRect(c.x * CELL + 5, c.y * CELL + 5, CELL - 10, CELL - 10);
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
+      const style = CRYSTALS[c.color];
+      ctx.strokeStyle = style.light;
+      ctx.strokeRect(c.x * CELL + 4.75, c.y * CELL + 4.75, CELL - 9.5, CELL - 9.5);
+      ctx.fillStyle = style.main;
+      ctx.fillRect(c.x * CELL + CELL / 2 - 2, c.y * CELL + CELL / 2 - 2, 4, 4);
     }
+    ctx.setLineDash([]);
     const cells = pairCells(pair);
-    // 축 크리스털 둘레의 빛 (회전 중심)
+    // 축 크리스털(회전 중심) 표시: 얇은 흰 고리
     const pivot = cells[0];
-    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.strokeStyle = "#f5f3ff";
+    ctx.lineWidth = 1.25;
     ctx.beginPath();
-    ctx.arc(pivot.x * CELL + CELL / 2, pivot.y * CELL + CELL / 2, CELL * 0.58 + Math.sin(this.clock * 6) * 1.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(pivot.x * CELL + CELL / 2, pivot.y * CELL + CELL / 2, CELL * 0.52 + (this.reducedMotion ? 0 : Math.sin(this.clock * 6) * 0.8), 0, Math.PI * 2);
+    ctx.stroke();
     for (const c of cells) if (c.y >= -1) this.drawCrystal(ctx, c.color, c.x * CELL, c.y * CELL, dpr);
   }
 
@@ -303,6 +394,11 @@ export class CascadeRenderer {
     const scale = opts.scale ?? 1;
     if (scale <= 0) return;
     const img = this.crystals.get(color, CELL, dpr, opts.white);
+    if (scale === 1) {
+      // 기기 픽셀에 맞춰 그대로 복사해 흐려지지 않게 한다 (낙하 중 소수 좌표 포함)
+      ctx.drawImage(img, Math.round(x * dpr) / dpr, Math.round(y * dpr) / dpr, CELL, CELL);
+      return;
+    }
     const size = CELL * scale;
     ctx.drawImage(img, x + (CELL - size) / 2, y + (CELL - size) / 2, size, size);
   }
@@ -318,10 +414,7 @@ export class CascadeRenderer {
         ctx.arc(p.x, p.y, p.size * (0.4 + t), 0, Math.PI * 2);
         ctx.stroke();
       } else if (p.kind === "spark") {
-        ctx.fillStyle = p.color;
-        const s = p.size * (1 - t * 0.5);
-        ctx.fillRect(p.x - s / 2, p.y - s * 1.5, s, s * 3);
-        ctx.fillRect(p.x - s * 1.5, p.y - s / 2, s * 3, s);
+        paintSparkle(ctx, p.x, p.y, p.size * 1.6 * (1 - t * 0.5), p.color);
       } else {
         ctx.save();
         ctx.translate(p.x, p.y);
@@ -405,7 +498,8 @@ export function drawNext(ctx: CanvasRenderingContext2D, colors: [Color, Color] |
   if (!colors) return;
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const size = Math.min(w, h / 2);
-  const x = (w - size) / 2;
-  ctx.drawImage(cache.get(colors[1], size, dpr), x, h / 2 - size, size, size);
-  ctx.drawImage(cache.get(colors[0], size, dpr), x, h / 2, size, size);
+  const x = Math.round(((w - size) / 2) * dpr) / dpr;
+  const y = Math.round((h / 2 - size) * dpr) / dpr;
+  ctx.drawImage(cache.get(colors[1], size, dpr), x, y, size, size);
+  ctx.drawImage(cache.get(colors[0], size, dpr), x, y + size, size, size);
 }
